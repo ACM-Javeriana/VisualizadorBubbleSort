@@ -7,34 +7,41 @@
 <meta name="description" content="Simulador interactivo en 3D (Three.js) del ordenamiento burbuja en C++ con arreglos estáticos y código editable.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #222a44;
-    --panel: #2b3452;
-    --panel-2: #353f60;
-    --border: #47537b;
-    --text: #f4f6fb;
-    --muted: #b3bdd8;
-    --accent: #6f98ff;
+    color-scheme: dark;
+    scrollbar-color: rgba(120, 150, 255, .25) transparent;
+    --bg: #070b18;
+    --panel: rgba(17, 25, 52, .74);
+    --panel-2: rgba(30, 42, 84, .5);
+    --border: rgba(120, 150, 255, .14);
+    --border-hi: rgba(80, 170, 255, .38);
+    --text: #eef2ff;
+    --muted: #8e9bc4;
+    --accent: #38bdf8;
+    --accent-2: #6366f1;
     --yellow: #ffd54a;
-    --red: #ff6f8a;
-    --green: #4adb95;
-    --code-bg: #262f4c;
+    --red: #ff5c8a;
+    --green: #3ee6a0;
+    --code-bg: rgba(6, 10, 24, .72);
     --kw: #d7a6ff;
     --ty: #8fb6ff;
     --num: #ffa07a;
     --str: #cdeea0;
     --pp: #92e3ff;
     --fn: #ffd27a;
-    --cm: #8590b3;
-    --radius: 14px;
+    --cm: #6f7ba3;
+    --radius: 16px;
     --mono: "JetBrains Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(1100px 600px at 8% -12%, rgba(56, 120, 255, .2), transparent 60%),
+      radial-gradient(900px 600px at 105% 115%, rgba(200, 70, 230, .17), transparent 60%),
+      var(--bg);
     color: var(--text);
     font: 15px/1.5 Inter, system-ui, sans-serif;
     display: flex;
@@ -43,136 +50,224 @@
     height: 100dvh;
     overflow: hidden;
   }
-  header { padding: 12px 20px; border-bottom: 1px solid var(--border); flex: none; }
-  header h1 { margin: 0 0 2px; font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
-  header p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  ::selection { background: rgba(56, 189, 248, .35); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(120, 150, 255, .22); border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-track { background: transparent; }
 
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
+  header { padding: 14px 22px 10px; flex: none; display: flex; align-items: center; gap: 14px; }
+  .logo {
+    flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    font-size: 20px; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, #38bdf8, #6366f1 60%, #d946ef);
+    box-shadow: 0 6px 22px rgba(99, 102, 241, .45), inset 0 1px 0 rgba(255,255,255,.35);
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float { 50% { transform: translateY(-3px) rotate(-4deg); } }
+  header h1 { margin: 0 0 1px; font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+  header h1 .grad { background: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  header p b { color: var(--text); }
+
+  .card {
+    background: linear-gradient(180deg, rgba(22, 32, 66, .78), rgba(12, 18, 40, .78));
+    border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05);
+    backdrop-filter: blur(12px);
+    animation: rise .6s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  #guide { animation-delay: .08s; } #tryCard { animation-delay: .16s; } #editorCard { animation-delay: .1s; } #datos { animation-delay: .2s; }
 
   /* ---------- Distribución con paneles redimensionables ---------- */
   main {
     flex: 1; min-height: 0;
-    display: grid; grid-template-columns: minmax(0, 1fr) 14px var(--editor-w, 480px);
-    padding: 12px 14px 14px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 14px var(--editor-w, 500px);
+    padding: 6px 16px 16px;
   }
   #left { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-  #right { display: flex; min-width: 0; min-height: 0; }
+  #right { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
   #bottom { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
 
   .gutter { flex: none; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; }
-  .gutter::after { content: ""; background: var(--border); border-radius: 99px; transition: background .15s; }
+  .gutter::after { content: ""; background: rgba(120, 150, 255, .2); border-radius: 99px; transition: background .2s, box-shadow .2s; }
   .gutter.h { height: 14px; cursor: row-resize; }
-  .gutter.h::after { width: 56px; height: 5px; }
+  .gutter.h::after { width: 56px; height: 4px; }
   .gutter.v { width: 14px; cursor: col-resize; }
-  .gutter.v::after { width: 5px; height: 56px; }
-  .gutter:hover::after, .gutter.drag::after { background: var(--accent); }
+  .gutter.v::after { width: 4px; height: 56px; }
+  .gutter:hover::after, .gutter.drag::after { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
   #gEditorM { display: none; }
 
   /* ---------- Escenario 3D ---------- */
-  #stage { position: relative; flex: 0 0 var(--stage-h, 58%); min-height: 160px; overflow: hidden; }
+  #stage { position: relative; flex: 0 0 var(--stage-h, 58%); min-height: 160px; overflow: hidden; background: #0b1130; }
   #stage canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
+  #stage::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(120, 160, 255, .08), inset 0 -60px 80px -40px rgba(200, 70, 230, .18);
+  }
+  .glass {
+    background: rgba(10, 16, 38, .62); backdrop-filter: blur(10px);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
   .legend {
-    position: absolute; top: 10px; left: 10px; display: flex; gap: 6px 12px; flex-wrap: wrap; max-width: calc(100% - 230px);
-    background: rgba(34,42,68,.78); backdrop-filter: blur(6px);
-    border: 1px solid var(--border); border-radius: 10px; padding: 6px 11px; font-size: 12.5px;
+    position: absolute; top: 12px; left: 12px; z-index: 2; display: flex; gap: 6px 14px; flex-wrap: wrap; max-width: calc(100% - 260px);
+    padding: 7px 12px; font-size: 12.5px;
   }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
-  .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
-  .legend i.ghost { background: rgba(223,231,255,.18); border: 1px dashed #dfe7ff; }
-  .stage-tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center; }
-  .badge {
-    font-weight: 600; font-size: 13px; background: rgba(34,42,68,.78);
-    border: 1px solid var(--border); border-radius: 10px; padding: 6px 11px; white-space: nowrap;
-  }
-  .stage-tools button { padding: 6px 11px; font-size: 13px; background: rgba(34,42,68,.78); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; color: #c3cbe8; }
+  .legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; flex: none; }
+  .legend i.rainbow { background: linear-gradient(135deg, #a78bfa, #38bdf8, #34d399, #fbbf24, #f472b6); }
+  .legend i.ring { background: transparent; border: 2px solid var(--c); box-shadow: 0 0 8px var(--c); border-radius: 50%; }
+  .legend i.ghost { background: rgba(223, 231, 255, .12); border: 1px dashed #dfe7ff; }
+  .stage-tools { position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; gap: 8px; align-items: center; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; padding: 7px 12px; white-space: nowrap; }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blink 1.6s ease-in-out infinite; }
+  .badge[data-state="done"]::before { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .badge[data-state="err"]::before { background: var(--red); box-shadow: 0 0 10px var(--red); }
+  @keyframes blink { 50% { opacity: .35; } }
+  .stage-tools button { padding: 7px 11px; font-size: 13px; background: rgba(10, 16, 38, .62); backdrop-filter: blur(10px); }
   .hint {
-    position: absolute; bottom: 10px; right: 12px; font-size: 12px; color: var(--muted);
-    background: rgba(34,42,68,.7); padding: 3px 8px; border-radius: 6px; pointer-events: none;
+    position: absolute; bottom: 12px; right: 14px; z-index: 2; font-size: 12px; color: var(--muted);
+    padding: 4px 10px; pointer-events: none;
   }
   .empty {
-    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-    text-align: center; padding: 24px; color: var(--muted); font-size: 16px;
+    position: absolute; inset: 0; z-index: 3; display: none; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; color: #ffd0dc; font-size: 16px; background: rgba(7, 11, 24, .6); backdrop-filter: blur(4px);
   }
 
   /* ---------- Narración + botones ---------- */
   #guide { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
   .say { display: flex; gap: 14px; align-items: flex-start; }
   .tag {
-    flex: none; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
-    padding: 5px 10px; border-radius: 8px; background: var(--panel-2); color: var(--accent);
-    margin-top: 3px; min-width: 104px; text-align: center;
+    --c: var(--accent);
+    flex: none; font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em;
+    padding: 6px 12px; border-radius: 99px; color: var(--c);
+    background: color-mix(in srgb, var(--c) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--c) 22%, transparent);
+    margin-top: 2px; min-width: 112px; text-align: center; transition: color .3s, border-color .3s, box-shadow .3s, background .3s;
   }
-  .tag[data-type="compare"] { color: var(--yellow); }
-  .tag[data-type="move"], .tag[data-type="save"], .tag[data-type="set"], .tag[data-type="lost"] { color: var(--red); }
-  .tag[data-type="loopEnd"], .tag[data-type="done"] { color: var(--green); }
-  #msg { font-size: 17.5px; line-height: 1.55; min-height: 54px; }
+  .tag[data-type="compare"] { --c: var(--yellow); }
+  .tag[data-type="move"], .tag[data-type="save"], .tag[data-type="set"], .tag[data-type="lost"] { --c: var(--red); }
+  .tag[data-type="loopEnd"], .tag[data-type="done"] { --c: var(--green); }
+  #msg { font-size: 17px; line-height: 1.6; min-height: 54px; color: #dfe5f8; }
   #msg .yes { color: var(--yellow); }
   #msg .no { color: var(--muted); }
   #msg .n { font-weight: 700; color: #fff; }
   #msg .warn { color: var(--red); font-weight: 600; }
-  #msg code { font: 14.5px var(--mono); background: var(--panel-2); padding: 1px 6px; border-radius: 5px; }
+  #msg code { font: 14px var(--mono); background: rgba(56, 189, 248, .1); border: 1px solid rgba(56, 189, 248, .2); padding: 1px 6px; border-radius: 6px; color: #bfe8ff; }
 
   .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   button {
-    font: 600 15px Inter, sans-serif; color: var(--text); cursor: pointer;
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px 16px; transition: background .15s, border-color .15s, filter .15s;
+    font: 600 14.5px Inter, sans-serif; color: var(--text); cursor: pointer;
+    background: rgba(30, 44, 90, .45); border: 1px solid var(--border-hi); border-radius: 11px;
+    padding: 10px 16px; transition: background .2s, border-color .2s, box-shadow .2s, transform .15s, filter .2s;
   }
-  button:hover { border-color: var(--accent); }
+  button:hover:not(:disabled) { border-color: var(--accent); box-shadow: 0 0 18px rgba(56, 189, 248, .28); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0) scale(.97); }
   button:disabled { opacity: .35; cursor: not-allowed; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-size: 17px; padding: 12px 26px; }
-  button.primary:hover { filter: brightness(1.08); }
-  button.on { border-color: var(--yellow); color: var(--yellow); }
+  button.primary {
+    position: relative; overflow: hidden; color: #fff; font-size: 16.5px; padding: 12px 28px; border-color: transparent;
+    background: linear-gradient(135deg, #38bdf8, #3b82f6 55%, #6366f1);
+    box-shadow: 0 8px 26px rgba(56, 140, 248, .45), inset 0 1px 0 rgba(255, 255, 255, .3);
+  }
+  button.primary::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .38) 50%, transparent 70%);
+    transform: translateX(-130%); animation: shine 3.4s ease-in-out infinite;
+  }
+  @keyframes shine { 0%, 55% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+  button.primary:hover:not(:disabled) { filter: brightness(1.1); box-shadow: 0 10px 34px rgba(56, 140, 248, .6), inset 0 1px 0 rgba(255, 255, 255, .3); }
+  button.primary:disabled::after { display: none; }
+  button.on { border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 18px rgba(255, 213, 74, .25); }
 
   .progress { display: flex; align-items: center; gap: 12px; }
-  .bar { flex: 1; height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
-  #progFill { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 99px; transition: width .35s; }
-  #progText { font-size: 13px; color: var(--muted); min-width: 110px; text-align: right; }
+  .bar { flex: 1; height: 7px; background: rgba(120, 150, 255, .12); border-radius: 99px; overflow: hidden; }
+  #progFill {
+    height: 100%; width: 0; border-radius: 99px; transition: width .45s cubic-bezier(.2, .8, .2, 1);
+    background: linear-gradient(90deg, #38bdf8, #818cf8, #f472b6, #38bdf8); background-size: 300% 100%;
+    box-shadow: 0 0 12px rgba(129, 140, 248, .7); animation: flow 4s linear infinite;
+  }
+  @keyframes flow { to { background-position: 300% 0; } }
+  #progText { font-size: 12.5px; color: var(--muted); min-width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
 
   /* ---------- Datos ---------- */
-  #datos { padding: 14px 18px; }
-  .sec-title { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
-  .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-  .v { background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; min-width: 0; }
-  .v .k { font: 12px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .v .val { font: 700 17px var(--mono); }
-  .v.changed { animation: flash .6s ease-out; }
-  @keyframes flash { from { border-color: var(--yellow); background: rgba(255,213,74,.22); } }
-  #stdout {
-    margin-top: 12px; font: 13.5px var(--mono); background: var(--code-bg); border: 1px solid var(--border);
-    border-radius: 9px; padding: 8px 12px; color: var(--green); min-height: 38px; white-space: pre-wrap; word-break: break-word;
+  #datos { padding: 14px 16px; flex: none; max-height: 52%; overflow: auto; }
+  .sec-title { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin: 0 0 10px; }
+  .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+  .vgrid .v {
+    background: rgba(8, 13, 32, .55); border: 1px solid var(--border); border-radius: 10px; padding: 7px 11px; min-width: 0;
+    transition: border-color .3s;
   }
-  #stdout .prompt { color: var(--muted); }
+  .vgrid .v .k { font: 11.5px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vgrid .v .val { font: 700 18px var(--mono); }
+  .vgrid .v.changed { animation: flash .7s ease-out; }
+  @keyframes flash { from { border-color: var(--accent); background: rgba(56, 189, 248, .2); box-shadow: 0 0 18px rgba(56, 189, 248, .35); } }
+
+  .arr-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; margin-top: 12px; font-family: var(--mono); }
+  .arr-row:empty { display: none; }
+  .arr-name { color: var(--muted); font-size: 13px; padding-top: 6px; }
+  .chip { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .chip b {
+    min-width: 36px; text-align: center; padding: 4px 6px; border-radius: 8px; font-size: 13.5px; color: #fff;
+    border: 1px solid color-mix(in srgb, var(--c) 70%, transparent);
+    background: color-mix(in srgb, var(--c) 22%, rgba(8, 13, 32, .7));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--c) 28%, transparent);
+    transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), outline-color .3s, box-shadow .3s;
+    outline: 2px solid transparent; outline-offset: 2px;
+  }
+  .chip small { font-size: 10.5px; color: var(--muted); }
+  .chip.cmp b { outline-color: var(--yellow); transform: translateY(-3px); box-shadow: 0 0 16px rgba(255, 213, 74, .5); }
+  .chip.mov b { outline-color: var(--red); transform: translateY(-3px); box-shadow: 0 0 16px rgba(255, 92, 138, .5); }
+  .chip.ok b { outline-color: color-mix(in srgb, var(--green) 70%, transparent); }
+  .chip.ghost b { opacity: .45; border-style: dashed; }
+  .chip.pop b { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+  @keyframes pop { from { transform: scale(.6); } }
+
+  #stdout {
+    margin-top: 12px; font: 13px var(--mono); background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 12px; color: var(--green); min-height: 40px; white-space: pre-wrap; word-break: break-word;
+    text-shadow: 0 0 10px rgba(62, 230, 160, .35);
+  }
+  #stdout .prompt { color: var(--muted); text-shadow: none; }
 
   /* ---------- Probar otros números ---------- */
-  .try { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 18px; }
+  .try { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 13px 16px; }
   .try .lbl { color: var(--muted); font-size: 14px; }
   input[type=text] {
     font: 15px Inter, sans-serif; color: var(--text); background: var(--code-bg);
-    border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; flex: 1; min-width: 200px;
+    border: 1px solid var(--border); border-radius: 11px; padding: 10px 13px; flex: 1; min-width: 200px;
+    transition: border-color .2s, box-shadow .2s;
   }
-  input[type=text]:focus { outline: none; border-color: var(--accent); }
+  input[type=text]::placeholder { color: #5f6b92; }
+  input[type=text]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, .15); }
   #err { color: var(--red); font-size: 14px; width: 100%; }
   #err:empty { display: none; }
 
   /* ---------- Editor de código ---------- */
   #editorCard { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-  .tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); flex: none; }
+  .tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); flex: none; padding: 0 6px; }
   .tabs [data-tab] {
-    background: none; border: none; border-radius: 0; padding: 12px 15px; color: var(--muted);
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    background: none; border: none; border-radius: 0; padding: 13px 14px; color: var(--muted); position: relative; box-shadow: none !important; transform: none !important;
   }
-  .tabs [data-tab].active { color: var(--text); border-bottom-color: var(--accent); }
-  #bRestore { margin-left: auto; margin-right: 10px; padding: 7px 12px; font-size: 13.5px; }
-  .status { flex: none; padding: 8px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: baseline; }
+  .tabs [data-tab]::after {
+    content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, #38bdf8, #a78bfa); box-shadow: 0 0 10px #38bdf8;
+    transform: scaleX(0); transition: transform .25s;
+  }
+  .tabs [data-tab]:hover { color: var(--text); }
+  .tabs [data-tab].active { color: var(--text); }
+  .tabs [data-tab].active::after { transform: scaleX(1); }
+  .fname { margin-left: auto; font: 12px var(--mono); color: var(--muted); padding: 3px 9px; border-radius: 7px; background: rgba(120, 150, 255, .08); }
+  #bRestore { margin: 0 4px 0 8px; padding: 6px 10px; font-size: 13px; }
+  .status { flex: none; padding: 7px 14px; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: baseline; }
   .status.ok { color: var(--green); }
   .status.busy { color: var(--muted); }
-  .status.err { color: #ffd0d9; background: rgba(255,111,138,.16); }
-  .status .hintx { color: var(--muted); margin-left: auto; font-size: 12.5px; white-space: nowrap; }
+  .status.err { color: #ffd0dc; background: rgba(255, 92, 138, .14); }
+  .status .hintx { color: var(--muted); margin-left: auto; font-size: 12px; white-space: nowrap; }
   .status.err .hintx { display: none; }
 
   #editor { position: relative; flex: 1; display: flex; min-height: 0; background: var(--code-bg); font: 13.5px/1.8 var(--mono); font-variant-ligatures: none; }
-  #nums { flex: none; width: 46px; overflow: hidden; color: var(--cm); text-align: right; user-select: none; border-right: 1px solid var(--border); }
+  #nums { flex: none; width: 46px; overflow: hidden; color: #4b5680; text-align: right; user-select: none; border-right: 1px solid var(--border); }
   #numsInner { padding: 10px 10px 10px 0; }
   #edwrap { position: relative; flex: 1; overflow: hidden; min-width: 0; }
   #hl, #src {
@@ -181,47 +276,52 @@
   }
   #hl { pointer-events: none; overflow: hidden; }
   #hlInner { width: max-content; min-width: 100%; }
-  .ln { margin: 0 -16px 0 -12px; padding: 0 16px 0 9px; border-left: 3px solid transparent; min-height: 1.8em; transition: background .2s; }
-  .ln.on { background: rgba(111,152,255,.2); border-left-color: var(--accent); }
-  #hl[data-type="compare"] .ln.on { background: rgba(255,213,74,.17); border-left-color: var(--yellow); }
-  #hl[data-type="move"] .ln.on, #hl[data-type="save"] .ln.on, #hl[data-type="set"] .ln.on, #hl[data-type="lost"] .ln.on { background: rgba(255,111,138,.2); border-left-color: var(--red); }
-  #hl[data-type="loopEnd"] .ln.on, #hl[data-type="done"] .ln.on { background: rgba(74,219,149,.17); border-left-color: var(--green); }
-  .ln.err { background: rgba(255,111,138,.28) !important; border-left-color: var(--red) !important; }
+  .ln { margin: 0 -16px 0 -12px; padding: 0 16px 0 9px; border-left: 3px solid transparent; min-height: 1.8em; transition: background .25s, border-color .25s; }
+  .ln.on { background: linear-gradient(90deg, rgba(56, 189, 248, .22), rgba(56, 189, 248, .05)); border-left-color: var(--accent); }
+  #hl[data-type="compare"] .ln.on { background: linear-gradient(90deg, rgba(255, 213, 74, .2), rgba(255, 213, 74, .04)); border-left-color: var(--yellow); }
+  #hl[data-type="move"] .ln.on, #hl[data-type="save"] .ln.on, #hl[data-type="set"] .ln.on, #hl[data-type="lost"] .ln.on { background: linear-gradient(90deg, rgba(255, 92, 138, .22), rgba(255, 92, 138, .04)); border-left-color: var(--red); }
+  #hl[data-type="loopEnd"] .ln.on, #hl[data-type="done"] .ln.on { background: linear-gradient(90deg, rgba(62, 230, 160, .2), rgba(62, 230, 160, .04)); border-left-color: var(--green); }
+  .ln.err { background: rgba(255, 92, 138, .28) !important; border-left-color: var(--red) !important; }
   #src {
     color: transparent; background: transparent; caret-color: #fff; border: none; outline: none;
     resize: none; overflow: auto; z-index: 1; -webkit-text-fill-color: transparent;
   }
-  #src::selection { background: rgba(111,152,255,.4); }
+  #src::selection { background: rgba(56, 189, 248, .35); }
   .kw { color: var(--kw); } .ty { color: var(--ty); } .num { color: var(--num); }
   .str { color: var(--str); } .pp { color: var(--pp); } .fn { color: var(--fn); } .cm { color: var(--cm); font-style: italic; }
 
   #theory { display: none; flex: 1; overflow: auto; padding: 4px 18px 16px; font-size: 15px; }
-  #theory h3 { font-size: 16px; margin: 18px 0 6px; }
-  #theory p, #theory li { color: #d9dfee; }
+  #theory h3 { font-size: 16px; margin: 18px 0 6px; color: #bfe8ff; }
+  #theory p, #theory li { color: #d3daf0; }
   #theory ul { padding-left: 22px; margin: 6px 0; }
   #theory li { margin: 4px 0; }
   #theory code { font: 13px var(--mono); color: var(--fn); }
 
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
   /* ---------- Celular ---------- */
   @media (max-width: 860px) {
     body { height: auto; min-height: 100dvh; overflow: auto; }
-    header { padding: 12px 16px; }
+    header { padding: 12px 16px 6px; gap: 12px; }
+    .logo { width: 34px; height: 34px; font-size: 17px; border-radius: 10px; }
     header h1 { font-size: 18px; }
-    header p { font-size: 13.5px; }
-    main { display: flex; flex-direction: column; padding: 12px 16px 0; }
+    header p { font-size: 13px; }
+    main { display: flex; flex-direction: column; padding: 8px 16px 0; }
     #left, #bottom, #right { display: contents; }
-    #stage { order: 1; flex: none; height: var(--m-stage-h, 320px); }
+    #stage { order: 1; flex: none; height: var(--m-stage-h, 340px); }
     #gStage { order: 2; }
-    #datos { order: 3; }
+    #datos { order: 3; max-height: none; }
     #editorCard { order: 4; flex: none; height: var(--m-editor-h, 460px); margin-top: 12px; }
     #gEditor { display: none; }
     #gEditorM { order: 5; display: flex; }
     #tryCard { order: 6; padding: 14px 16px; }
     #guide {
       order: 7; position: sticky; bottom: 0; z-index: 10; margin: 12px -16px 0;
-      border-radius: 18px 18px 0 0; border-bottom: none;
+      border-radius: 20px 20px 0 0; border-bottom: none; background: rgba(12, 18, 40, .94);
       padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-      box-shadow: 0 -12px 30px rgba(0,0,0,.35); gap: 10px;
+      box-shadow: 0 -14px 34px rgba(0, 0, 0, .45); gap: 10px; animation: none;
     }
     .tag { display: none; }
     #msg { font-size: 15px; line-height: 1.45; min-height: 0; }
@@ -237,11 +337,13 @@
     .hint { display: none; }
     #editor { font-size: 12px; }
     #nums { width: 38px; }
-    .tabs [data-tab] { padding: 11px 11px; font-size: 14px; }
+    .tabs [data-tab] { padding: 11px 10px; font-size: 14px; }
+    .fname { display: none; }
+    #bRestore { margin-left: auto; }
     #bRestore .txt { display: none; }
     .status .hintx { display: none; }
     #theory { font-size: 14px; padding: 2px 16px 14px; }
-    .vgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+    .vgrid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
     .try .lbl { width: 100%; }
     .try input[type=text] { flex: 1 1 100%; min-width: 0; order: 1; }
     .try #bCustom { order: 2; flex: 1; }
@@ -260,25 +362,28 @@
 </head>
 <body>
 <header>
-  <h1>Ordenamiento burbuja en C++</h1>
-  <p>Pulsa <b>«Siguiente paso»</b> para ver cómo el programa ordena los números. También puedes editar el código y ver qué pasa.</p>
+  <div class="logo" aria-hidden="true">⇅</div>
+  <div>
+    <h1>Ordenamiento burbuja en <span class="grad">C++</span></h1>
+    <p>Pulsa <b>«Siguiente paso»</b> y mira cómo el programa ordena los números de menor a mayor, línea por línea.</p>
+  </div>
 </header>
 
 <main id="layout">
   <section id="left">
     <div id="stage" class="card">
-      <div class="legend">
-        <span><i style="background:var(--accent)"></i>Por ordenar</span>
-        <span><i style="background:var(--yellow)"></i>Comparando</span>
-        <span><i style="background:var(--red)"></i>Moviendo</span>
-        <span><i style="background:var(--green)"></i>Ya en su lugar</span>
+      <div class="legend glass">
+        <span><i class="rainbow"></i>Por ordenar</span>
+        <span><i class="ring" style="--c:var(--yellow)"></i>Comparando</span>
+        <span><i class="ring" style="--c:var(--red)"></i>Cambiando de lugar</span>
+        <span><i class="ring" style="--c:var(--green)"></i>Ya en su lugar</span>
         <span><i class="ghost"></i>Copia en memoria</span>
       </div>
       <div class="stage-tools">
-        <span class="badge" id="badge">—</span>
-        <button id="bCenter" title="Volver a la vista inicial">⌖ Centrar</button>
+        <span class="badge glass" id="badge">—</span>
+        <button id="bCenter" title="Volver a la vista inicial" aria-label="Centrar vista">⌖</button>
       </div>
-      <div class="hint">Arrastra para girar · clic derecho para moverte · rueda para acercar</div>
+      <div class="hint glass">Arrastra para girar · clic derecho para moverte · rueda para acercar</div>
       <div class="empty" id="empty">El código tiene un error.<br>Corrígelo o pulsa «Restablecer código».</div>
     </div>
 
@@ -302,13 +407,6 @@
         </div>
       </div>
 
-      <div id="datos" class="card">
-        <p class="sec-title">Lo que guarda el programa en memoria</p>
-        <div class="vgrid" id="vgrid"></div>
-        <div id="stdout"><span class="prompt">Pantalla del programa:</span>
-<span id="outText"></span></div>
-      </div>
-
       <div id="tryCard" class="card try">
         <span class="lbl">¿Probar con otros números?</span>
         <button id="bRandom">🎲 Números al azar</button>
@@ -326,7 +424,8 @@
       <div class="tabs">
         <button class="active" data-tab="code">Código</button>
         <button data-tab="theory">¿Cómo funciona?</button>
-        <button id="bRestore" title="Volver al código original">↺<span class="txt"> Restablecer código</span></button>
+        <span class="fname">burbuja.cpp</span>
+        <button id="bRestore" title="Volver al código original">↺<span class="txt"> Restablecer</span></button>
       </div>
       <div class="status ok" id="status"><span id="statusText">✓ El código funciona</span><span class="hintx">Puedes escribir aquí</span></div>
       <div id="editor">
@@ -342,6 +441,9 @@
            cada una de las que están a su derecha. Cada vez que encuentras una más pequeña, las cambias de lugar.
            Al terminar la vuelta, en la primera casilla quedó el número más pequeño de todos.</p>
         <p>Luego repites lo mismo desde la segunda casilla, después desde la tercera… hasta llegar al final.</p>
+        <h3>Los colores</h3>
+        <p>Cada número tiene su propio color: los pequeños son violetas y azules, los grandes naranjas y rosas.
+           Cuando el arreglo queda ordenado, los colores forman un arcoíris.</p>
         <h3>Las piezas del código</h3>
         <ul>
           <li><code>arreglo</code>: la fila de casillas donde están los números. Las casillas se cuentan desde 0.</li>
@@ -353,7 +455,7 @@
         <p>Si escribiéramos directamente <code>arreglo[j] = arreglo[i]</code>, el número que estaba en la casilla
            <code>j</code> se borraría. Es como cambiar el contenido de dos vasos: necesitas un tercer vaso vacío.</p>
         <p><b>Pruébalo:</b> borra la línea de <code>temporal</code> en el código y mira cómo se pierden números.
-           Si algo se rompe, pulsa «Restablecer código».</p>
+           Si algo se rompe, pulsa «Restablecer».</p>
         <h3>Las barras transparentes</h3>
         <p>Cuando un número se copia a otro lugar, la memoria todavía guarda el valor viejo en su casilla.
            Esa copia se dibuja como una barra transparente, hasta que se escribe otro número encima.</p>
@@ -361,6 +463,14 @@
         <p>Con 8 números hace 28 comparaciones; con 100 números, 4 950. Cuantos más números, el trabajo crece muy rápido.
            Por eso es ideal para aprender, pero en programas grandes se usan métodos más rápidos.</p>
       </div>
+    </div>
+
+    <div id="datos" class="card">
+      <p class="sec-title">Lo que guarda el programa en memoria</p>
+      <div class="vgrid" id="vgrid"></div>
+      <div class="arr-row" id="arrRow"></div>
+      <div id="stdout"><span class="prompt">Pantalla del programa:</span>
+<span id="outText"></span></div>
     </div>
   </section>
 
@@ -370,6 +480,10 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -1013,20 +1127,64 @@ const MAX_H = 5.2;
 const ANIM = 750;
 const AUTO_DELAY = 1500;
 const COLORS = {
-  base: new THREE.Color('#6f98ff'),
   compare: new THREE.Color('#ffd54a'),
-  move: new THREE.Color('#ff6f8a'),
-  sorted: new THREE.Color('#4adb95'),
+  move: new THREE.Color('#ff5c8a'),
+  sorted: new THREE.Color('#3ee6a0'),
+  white: new THREE.Color('#ffffff'),
 };
-const PTR_COLORS = ['#d9b0ff', '#ffd54a', '#86ecec'];
+const PTR_COLORS = ['#c4a1ff', '#ffd54a', '#5eead4'];
+
+// Cada número tiene su propio color: violeta (pequeños) → azul → verde → amarillo → rosa (grandes).
+let palette = [];
+const hueOf = (v) => {
+  const i = Math.max(0, palette.indexOf(v));
+  const t = palette.length > 1 ? i / (palette.length - 1) : 0.5;
+  return (265 - t * 285 + 360) % 360;
+};
+const colorOf = (v) => new THREE.Color().setHSL(hueOf(v) / 360, 0.8, 0.6);
+const cssColorOf = (v) => `hsl(${hueOf(v).toFixed(0)} 80% 62%)`;
+
+// Cómo se ve una barra según lo que le pasa en el paso actual
+const LOOK = {
+  base:    { edge: null,           halo: 0,    em: 0.22, lift: 0 },
+  compare: { edge: COLORS.compare, halo: 1,    em: 0.6,  lift: 0.35 },
+  move:    { edge: COLORS.move,    halo: 1,    em: 0.55, lift: 0 },
+  sorted:  { edge: COLORS.sorted,  halo: 0.75, em: 0.32, lift: 0 },
+};
 
 const stage = $('stage');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 stage.prepend(renderer.domElement);
 
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const radial = (ctx, x, y, r, stops) => {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  stops.forEach(([o, c]) => g.addColorStop(o, c));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+};
+
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#2c3658');
+scene.background = canvasTex(512, 512, (ctx, w, h) => {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#070b1c');
+  g.addColorStop(0.5, '#0e1534');
+  g.addColorStop(1, '#1c1244');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  radial(ctx, w * 0.5, h * 1.0, w * 0.65, [[0, 'rgba(210,70,230,.42)'], [1, 'rgba(210,70,230,0)']]);
+  radial(ctx, w * 0.12, h * 0.05, w * 0.55, [[0, 'rgba(60,130,255,.2)'], [1, 'rgba(60,130,255,0)']]);
+  radial(ctx, w * 0.9, h * 0.35, w * 0.4, [[0, 'rgba(56,189,248,.08)'], [1, 'rgba(56,189,248,0)']]);
+});
+scene.fog = new THREE.Fog('#151a40', 16, 52);
 
 const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 300);
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -1039,22 +1197,98 @@ controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 let userMoved = false;
 controls.addEventListener('start', () => { userMoved = true; });
 
-scene.add(new THREE.AmbientLight('#ffffff', 1.5));
-const sun = new THREE.DirectionalLight('#ffffff', 1.25);
+// brillo tipo neón
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.5, 0.7);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+scene.add(new THREE.HemisphereLight('#c4d4ff', '#2a1846', 1.2));
+const sun = new THREE.DirectionalLight('#ffffff', 1.7);
 sun.position.set(4, 10, 8);
 scene.add(sun);
+const rimL = new THREE.PointLight('#38bdf8', 40, 40);
+rimL.position.set(-9, 4, 4);
+const rimR = new THREE.PointLight('#d946ef', 40, 40);
+rimR.position.set(9, 4, 4);
+scene.add(rimL, rimR);
 
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshLambertMaterial({ color: '#34406a' }));
-floor.rotation.x = -Math.PI / 2;
-scene.add(floor);
-const grid = new THREE.GridHelper(120, 120, '#4f5c8a', '#3e4a76');
-grid.position.y = 0.003;
+const grid = new THREE.GridHelper(120, 120, '#3c58b4', '#232f68');
+grid.material.transparent = true;
+grid.material.opacity = 0.55;
+grid.position.y = 0.002;
 scene.add(grid);
+
+const shadowTex = canvasTex(256, 256, (ctx, w, h) => radial(ctx, w / 2, h / 2, w / 2, [[0, 'rgba(0,0,12,.75)'], [0.6, 'rgba(0,0,12,.35)'], [1, 'rgba(0,0,12,0)']]));
+const glowTex = canvasTex(256, 256, (ctx, w, h) => radial(ctx, w / 2, h / 2, w / 2, [[0, 'rgba(110,140,255,.5)'], [0.5, 'rgba(160,80,240,.16)'], [1, 'rgba(0,0,0,0)']]));
+const haloTex = canvasTex(128, 128, (ctx, w, h) => radial(ctx, w / 2, h / 2, w / 2,
+  [[0, 'rgba(255,255,255,.28)'], [0.5, 'rgba(255,255,255,.18)'], [0.6, 'rgba(255,255,255,1)'], [0.68, 'rgba(255,255,255,.4)'], [1, 'rgba(255,255,255,0)']]));
+const dotTex = canvasTex(64, 64, (ctx, w, h) => radial(ctx, w / 2, h / 2, w / 2, [[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,.55)'], [1, 'rgba(255,255,255,0)']]));
+
+const flatPlane = () => { const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2); return g; };
+const floorShadow = new THREE.Mesh(flatPlane(), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, fog: false }));
+floorShadow.position.y = 0.003;
+const floorGlow = new THREE.Mesh(flatPlane(), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+floorGlow.position.y = 0.004;
+scene.add(floorGlow, floorShadow);
 
 const boxGeo = new THREE.BoxGeometry(BAR_W, 1, BAR_W);
 boxGeo.translate(0, 0.5, 0);
 const edgeGeo = new THREE.EdgesGeometry(boxGeo);
-const edgeMat = new THREE.LineBasicMaterial({ color: '#1d2442', transparent: true, opacity: 0.35 });
+const haloGeo = flatPlane();
+haloGeo.scale(1.75, 1, 1.75);
+
+// --- chispas (al aterrizar, al perderse un número y al terminar) ---
+const P_MAX = 900;
+const pPos = new Float32Array(P_MAX * 3), pCol = new Float32Array(P_MAX * 3), pVel = new Float32Array(P_MAX * 3), pBase = new Float32Array(P_MAX * 3);
+const pLife = new Float32Array(P_MAX), pMax = new Float32Array(P_MAX);
+let pNext = 0;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+const sparks = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.17, map: dotTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+sparks.frustumCulled = false;
+scene.add(sparks);
+
+function emit(x, y, z, color, count, { spread = 1, up = 2.5, life = 0.9 } = {}) {
+  for (let n = 0; n < count; n++) {
+    const i = pNext, i3 = i * 3;
+    pNext = (pNext + 1) % P_MAX;
+    pPos[i3] = x + (Math.random() - 0.5) * 0.4; pPos[i3 + 1] = y; pPos[i3 + 2] = z + (Math.random() - 0.5) * 0.4;
+    const a = Math.random() * Math.PI * 2, r = Math.random() * spread * 1.6;
+    pVel[i3] = Math.cos(a) * r; pVel[i3 + 1] = up * (0.4 + Math.random()); pVel[i3 + 2] = Math.sin(a) * r;
+    pMax[i] = pLife[i] = life * (0.6 + Math.random() * 0.7);
+    pBase[i3] = color.r * 1.6; pBase[i3 + 1] = color.g * 1.6; pBase[i3 + 2] = color.b * 1.6;
+  }
+}
+function updateSparks(dt) {
+  for (let i = 0; i < P_MAX; i++) {
+    const i3 = i * 3;
+    if (pLife[i] <= 0) { pCol[i3] = pCol[i3 + 1] = pCol[i3 + 2] = 0; continue; }
+    pLife[i] -= dt;
+    pVel[i3 + 1] -= 5 * dt;
+    pPos[i3] += pVel[i3] * dt; pPos[i3 + 1] += pVel[i3 + 1] * dt; pPos[i3 + 2] += pVel[i3 + 2] * dt;
+    if (pPos[i3 + 1] < 0.02) { pPos[i3 + 1] = 0.02; pVel[i3 + 1] *= -0.4; pVel[i3] *= 0.7; pVel[i3 + 2] *= 0.7; }
+    const f = Math.max(0, pLife[i] / pMax[i]);
+    pCol[i3] = pBase[i3] * f; pCol[i3 + 1] = pBase[i3 + 1] * f; pCol[i3 + 2] = pBase[i3 + 2] * f;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  pGeo.attributes.color.needsUpdate = true;
+}
+
+// --- polvo flotando en el ambiente ---
+const D_MAX = 160;
+const dPos = new Float32Array(D_MAX * 3), dSpd = new Float32Array(D_MAX);
+for (let i = 0; i < D_MAX; i++) {
+  dPos[i * 3] = (Math.random() - 0.5) * 30; dPos[i * 3 + 1] = Math.random() * 10; dPos[i * 3 + 2] = (Math.random() - 0.5) * 16 - 2;
+  dSpd[i] = 0.08 + Math.random() * 0.25;
+}
+const dGeo = new THREE.BufferGeometry();
+dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+const dust = new THREE.Points(dGeo, new THREE.PointsMaterial({ size: 0.07, map: dotTex, color: '#8fb4ff', transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+dust.frustumCulled = false;
+scene.add(dust);
 
 function textTexture(text, { fg = '#ffffff', bg = null, weight = 700, size = 72 } = {}) {
   const c = document.createElement('canvas');
@@ -1064,9 +1298,9 @@ function textTexture(text, { fg = '#ffffff', bg = null, weight = 700, size = 72 
   const H = Math.round(size * 1.55);
   const W = Math.max(H, Math.ceil(ctx.measureText(text).width) + size * 0.7);
   c.width = W; c.height = H;
-  if (bg) { ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(0, 0, W, H, H * 0.28); ctx.fill(); }
+  if (bg) { ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(0, 0, W, H, H * 0.32); ctx.fill(); }
   ctx.font = f; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if (!bg) { ctx.lineWidth = size * 0.16; ctx.strokeStyle = 'rgba(28,34,60,.85)'; ctx.lineJoin = 'round'; ctx.strokeText(text, W / 2, H / 2 + size * 0.05); }
+  if (!bg) { ctx.lineWidth = size * 0.18; ctx.strokeStyle = 'rgba(8,12,30,.9)'; ctx.lineJoin = 'round'; ctx.strokeText(text, W / 2, H / 2 + size * 0.05); }
   ctx.fillStyle = fg;
   ctx.fillText(text, W / 2, H / 2 + size * 0.05);
   const tex = new THREE.CanvasTexture(c);
@@ -1099,37 +1333,56 @@ let run = null;
 let steps = [];
 let cur = 0;
 let bars = [], ghosts = [], idxLabels = [], pads = [], pointers = [];
-let prevVars = {};
+let prevVars = {}, prevMem = null;
 let playing = false, lastAdvance = 0;
+let introT0 = 0, celebT0 = 0;
 
 const xOf = (k) => (k - ((run?.n ?? 1) - 1) / 2) * SP;
 const padX = (i) => xOf(run.n - 1) + SP * 2 + i * SP * 1.7;
 const heightOf = (v) => (v <= 0 ? 0.3 : 0.45 + (Math.min(v, run.maxV) / run.maxV) * MAX_H);
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const backOut = (t) => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const clamp01 = (t) => Math.max(0, Math.min(1, t));
 
 function clearScene() {
-  bars.forEach((b) => { scene.remove(b.mesh); b.mat.dispose(); disposeSprite(b.label); });
+  bars.forEach((b) => { scene.remove(b.mesh, b.halo); b.mat.dispose(); b.emat.dispose(); b.halo.material.dispose(); disposeSprite(b.label); });
   ghosts.forEach((g) => { scene.remove(g.mesh); g.mat.dispose(); g.emat.dispose(); disposeSprite(g.label); });
   idxLabels.forEach(disposeSprite);
-  pads.forEach((p) => { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); disposeSprite(p.label); });
+  pads.forEach((p) => { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); p.edge.geometry.dispose(); p.edge.material.dispose(); disposeSprite(p.label); });
   pointers.forEach((p) => { scene.remove(p.group); p.cone.geometry.dispose(); p.cone.material.dispose(); disposeSprite(p.label); });
   bars = []; ghosts = []; idxLabels = []; pads = []; pointers = [];
 }
 
 function buildScene() {
   clearScene();
+  const seen = new Set();
+  for (const s of steps) {
+    for (const v of s.st.mem || []) seen.add(v);
+    for (const v of s.st.val) if (v !== undefined) seen.add(v);
+  }
+  palette = [...seen].sort((a, b) => a - b);
+
   const firstVal = (id) => { for (const s of steps) if (s.st.val[id] !== undefined) return s.st.val[id]; return 0; };
   for (let id = 0; id < run.meshCount; id++) {
-    const mat = new THREE.MeshLambertMaterial({ color: COLORS.base.clone() });
+    const v = firstVal(id);
+    const c = colorOf(v);
+    const mat = new THREE.MeshStandardMaterial({ color: c.clone(), roughness: 0.3, metalness: 0.12, emissive: c.clone(), emissiveIntensity: 0.22 });
+    const emat = new THREE.LineBasicMaterial({ color: c.clone().lerp(COLORS.white, 0.45), transparent: true, opacity: 0.9 });
     const mesh = new THREE.Mesh(boxGeo, mat);
-    mesh.add(new THREE.LineSegments(edgeGeo, edgeMat));
+    mesh.add(new THREE.LineSegments(edgeGeo, emat));
     mesh.visible = false;
     scene.add(mesh);
-    const v = firstVal(id);
+    const halo = new THREE.Mesh(haloGeo, new THREE.MeshBasicMaterial({ map: haloTex, color: c.clone(), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+    halo.visible = false;
+    scene.add(halo);
     const label = textSprite(String(v), { h: 0.46 });
     label.visible = false;
     scene.add(label);
-    bars.push({ id, mesh, mat, label, h: heightOf(v), hT: heightOf(v), vis: 0, visT: 0, x: 0, fromX: 0, toX: 0, t0: 0, dur: 0, key: null, color: COLORS.base.clone() });
+    bars.push({
+      id, mesh, mat, emat, halo, label, h: heightOf(v), hT: heightOf(v), vis: 0, visT: 0, x: 0, fromX: 0, toX: 0, t0: 0, dur: 0, key: null,
+      k: 0, state: 'base', bodyT: c.clone(), edgeT: c.clone(), haloC: c.clone(), labelC: COLORS.white.clone(),
+      haloO: 0, haloOT: 0, emIT: 0.22, lift: 0, liftT: 0, popT0: -1e9, landed: true, celebrated: true,
+    });
   }
   for (let k = 0; k < run.n; k++) {
     const mat = new THREE.MeshBasicMaterial({ color: '#dfe7ff', transparent: true, opacity: 0, depthWrite: false });
@@ -1143,32 +1396,39 @@ function buildScene() {
     label.visible = false;
     scene.add(label);
     ghosts.push({ mesh, mat, emat, label, h: 0.5, hT: 0.5, vis: 0, visT: 0 });
-    const il = textSprite(`[${k}]`, { fg: '#c3cbe4', weight: 600, h: 0.34 });
-    il.position.set(xOf(k), 0.25, 1.05);
+    const il = textSprite(`[${k}]`, { fg: '#8fa0d4', weight: 600, h: 0.32 });
+    il.position.set(xOf(k), 0.22, 1.05);
     scene.add(il);
     idxLabels.push(il);
   }
   run.pads.forEach((name, i) => {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 1.3), new THREE.MeshLambertMaterial({ color: '#46527e', emissive: new THREE.Color('#ff6f8a'), emissiveIntensity: 0 }));
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 1.3), new THREE.MeshStandardMaterial({ color: '#1a2350', roughness: 0.5, emissive: new THREE.Color('#ff5c8a'), emissiveIntensity: 0 }));
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.75 }));
+    mesh.add(edge);
     mesh.position.set(padX(i), 0.04, 0);
     scene.add(mesh);
-    const label = textSprite(name, { fg: '#ffd27a', weight: 600, h: 0.36 });
-    label.position.set(padX(i), 0.25, 1.05);
+    const label = textSprite(name, { fg: '#ffd27a', weight: 600, h: 0.34 });
+    label.position.set(padX(i), 0.22, 1.05);
     scene.add(label);
-    pads.push({ name, mesh, label });
+    pads.push({ name, mesh, edge, label, glow: 0, glowT: 0 });
   });
   run.idxVars.forEach((name, i) => {
     const color = PTR_COLORS[i % PTR_COLORS.length];
     const group = new THREE.Group();
-    const label = textSprite(name, { fg: '#1d2442', bg: color, h: 0.5 });
+    const label = textSprite(name, { fg: '#0b1130', bg: color, h: 0.5 });
     label.position.y = 0.55;
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 20), new THREE.MeshLambertMaterial({ color }));
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 20), new THREE.MeshStandardMaterial({ color, emissive: new THREE.Color(color), emissiveIntensity: 0.6 }));
     cone.rotation.x = Math.PI;
     group.add(label, cone);
     group.visible = false;
     scene.add(group);
     pointers.push({ name, group, label, cone, target: new THREE.Vector3() });
   });
+
+  const x0 = xOf(0) - SP, x1 = (run.pads.length ? padX(run.pads.length - 1) : xOf(run.n - 1)) + SP;
+  floorShadow.position.x = floorGlow.position.x = (x0 + x1) / 2;
+  floorShadow.scale.set((x1 - x0) * 1.15, 1, 4.2);
+  floorGlow.scale.set((x1 - x0) * 1.9, 1, 11);
   frameCamera(true);
 }
 
@@ -1197,19 +1457,24 @@ function frameCamera(force = false) {
 // ===========================================================================
 function goTo(idx, animate = true) {
   if (!run) return;
+  const forward = animate && idx > cur;
   cur = Math.max(0, Math.min(steps.length - 1, idx));
   const s = steps[cur], st = s.st;
   const now = performance.now();
 
   const loc = {};
   st.cell.forEach((id, k) => { if (id != null) loc[id] = { x: xOf(k), key: 'c' + k, k }; });
-  run.pads.forEach((nm, i) => { const id = st.pad[nm]; if (id != null) loc[id] = { x: padX(i), key: 'p' + nm, pad: true }; });
+  run.pads.forEach((nm, i) => { const id = st.pad[nm]; if (id != null) loc[id] = { x: padX(i), key: 'p' + nm, pad: true, i }; });
   const readCells = new Set(s.type === 'compare' ? st.reads.map((r) => r.k) : []);
   const moved = new Set(st.moved);
 
   bars.forEach((b) => {
     const L = loc[b.id];
-    if (!L) { b.visT = 0; b.key = null; return; }
+    if (!L) {
+      // un número que desaparece (se escribió otro encima): estalla en chispas rojas
+      if (forward && b.visT === 1 && b.vis > 0.5) emit(b.x, b.h * 0.5, 0, COLORS.move, 34, { spread: 1.2, up: 3 });
+      b.visT = 0; b.key = null; return;
+    }
     const v = st.val[b.id];
     b.hT = heightOf(v);
     setSpriteText(b.label, String(v));
@@ -1218,17 +1483,32 @@ function goTo(idx, animate = true) {
       b.x = b.fromX = animate && sp ? xOf(sp.cell) : L.x;
       if (!animate || b.vis < 0.05) b.h = b.hT;
     }
-    if (b.key !== L.key) { b.fromX = b.x; b.toX = L.x; b.t0 = now; b.dur = animate ? ANIM : 0; }
+    if (b.key !== L.key) {
+      b.fromX = b.x; b.toX = L.x; b.t0 = now; b.dur = animate ? ANIM : 0;
+      b.landed = !animate;
+    }
     b.key = L.key;
+    b.k = L.k ?? run.n + (L.i ?? 0);
     b.visT = 1;
     if (!animate) { b.vis = 1; b.h = b.hT; b.x = b.toX = L.x; b.dur = 0; }
 
-    let c = COLORS.base;
-    if (L.k !== undefined && s.settled[L.k]) c = COLORS.sorted;
-    if (L.k !== undefined && readCells.has(L.k)) c = COLORS.compare;
-    if (moved.has(b.id) || L.pad) c = COLORS.move;
-    if (s.type === 'done' && run.sorted) c = COLORS.sorted;
-    b.color.copy(c);
+    let state = 'base';
+    if (L.k !== undefined && s.settled[L.k]) state = 'sorted';
+    if (L.k !== undefined && readCells.has(L.k)) state = 'compare';
+    if (moved.has(b.id) || L.pad) state = 'move';
+    if (s.type === 'done' && run.sorted) state = 'sorted';
+    if (animate && state !== b.state && (state === 'compare' || state === 'move')) b.popT0 = now;
+    if (forward && state === 'compare' && b.state !== 'compare') emit(b.x, 0.1, 0, COLORS.compare, 8, { spread: 0.6, up: 1.6, life: 0.6 });
+    b.state = state;
+
+    const look = LOOK[state];
+    b.bodyT.copy(colorOf(v));
+    b.edgeT.copy(look.edge || b.bodyT.clone().lerp(COLORS.white, 0.45));
+    b.haloC.copy(look.edge || b.bodyT);
+    b.labelC.copy(look.edge ? look.edge.clone().lerp(COLORS.white, 0.35) : COLORS.white);
+    b.haloOT = look.halo;
+    b.emIT = look.em;
+    b.liftT = look.lift;
   });
 
   ghosts.forEach((g, k) => {
@@ -1237,7 +1517,7 @@ function goTo(idx, animate = true) {
     if (!animate) { g.vis = g.visT; g.h = g.hT; }
   });
 
-  pads.forEach((p) => { p.mesh.material.emissiveIntensity = st.pad[p.name] != null ? 0.35 : 0; });
+  pads.forEach((p) => { p.glowT = st.pad[p.name] != null ? 0.6 : 0; });
 
   const used = {};
   pointers.forEach((p) => {
@@ -1247,11 +1527,16 @@ function goTo(idx, animate = true) {
       const id = st.cell[v];
       const h = id != null ? heightOf(st.val[id]) : heightOf(st.mem[v]);
       const stack = used[v] = (used[v] ?? -1) + 1;
-      p.target.set(xOf(v), h + (1.25 + stack * 1.05) * labelScale, 0);
+      p.target.set(xOf(v), h + (1.35 + stack * 1.05) * labelScale, 0);
       if (!p.group.visible || !animate) p.group.position.copy(p.target);
     }
     p.group.visible = show;
   });
+
+  if (s.type === 'done' && run.sorted && forward) {
+    celebT0 = now;
+    bars.forEach((b) => { b.celebrated = false; });
+  } else if (s.type !== 'done') celebT0 = 0;
 
   updatePanel(s);
 }
@@ -1263,14 +1548,20 @@ const TAGS = {
 
 function updatePanel(s) {
   const st = s.st;
-  $('msg').innerHTML = s.msg;
-  $('tag').textContent = TAGS[s.type] || 'paso';
+  const msgEl = $('msg');
+  if (msgEl.innerHTML !== s.msg) {
+    msgEl.innerHTML = s.msg;
+    msgEl.animate?.([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+  $('tag').textContent = cur === 0 ? 'inicio' : (TAGS[s.type] || 'paso');
   $('tag').dataset.type = s.type;
 
   const pct = steps.length > 1 ? (cur / (steps.length - 1)) * 100 : 100;
   $('progFill').style.width = `${pct}%`;
   $('progText').textContent = s.type === 'done' ? 'completado' : `${Math.round(pct)}% avanzado`;
-  $('badge').textContent = `Paso ${cur + 1} de ${steps.length}`;
+  const badge = $('badge');
+  badge.textContent = cur === 0 ? 'Listo para empezar' : s.type === 'done' ? '¡Completado!' : `Paso ${cur + 1} de ${steps.length}`;
+  badge.dataset.state = s.type === 'done' ? 'done' : '';
 
   activeLines = s.lines;
   activeType = s.type;
@@ -1286,6 +1577,19 @@ function updatePanel(s) {
     return `<div class="v${changed ? ' changed' : ''}"><div class="k" title="${k}">${k}</div><div class="val">${fmt(v)}</div></div>`;
   }).join('');
   prevVars = vars;
+
+  if (st.mem) {
+    const readCells = new Set(s.type === 'compare' ? st.reads.map((r) => r.k) : []);
+    const movedCells = new Set(st.events.flatMap((e) => (e.to !== undefined ? [e.to] : e.t === 'set' ? [e.k] : [])));
+    $('arrRow').innerHTML = `<span class="arr-name">${run.arr} = {</span>` + st.mem.map((v, k) => {
+      const cls = [
+        readCells.has(k) && 'cmp', movedCells.has(k) && 'mov', s.settled[k] && 'ok',
+        st.cell[k] == null && 'ghost', prevMem && prevMem[k] !== v && 'pop',
+      ].filter(Boolean).join(' ');
+      return `<span class="chip ${cls}" style="--c:${cssColorOf(v)}"><b>${v}</b><small>${k}</small></span>`;
+    }).join('') + '<span class="arr-name">}</span>';
+  } else $('arrRow').innerHTML = '';
+  prevMem = st.mem;
   $('outText').textContent = st.out;
 
   $('bPrev').disabled = $('bReset').disabled = cur === 0;
@@ -1298,10 +1602,13 @@ function setRun(r) {
   run = r;
   steps = r.steps;
   prevVars = {};
+  prevMem = null;
   $('empty').style.display = 'none';
   $('bAuto').disabled = false;
   buildScene();
   goTo(0, false);
+  introT0 = performance.now();
+  celebT0 = 0;
 }
 
 function showNoRun() {
@@ -1310,11 +1617,13 @@ function showNoRun() {
   run = null;
   steps = [];
   $('empty').style.display = 'flex';
-  $('msg').innerHTML = 'El código tiene un error. Mira el mensaje en rojo sobre el código, o pulsa <b>«Restablecer código»</b>.';
+  $('msg').innerHTML = 'El código tiene un error. Mira el mensaje en rojo sobre el código, o pulsa <b>«Restablecer»</b>.';
   $('tag').textContent = 'error';
   $('tag').dataset.type = 'lost';
-  $('badge').textContent = '—';
+  $('badge').textContent = 'Error en el código';
+  $('badge').dataset.state = 'err';
   $('vgrid').innerHTML = '';
+  $('arrRow').innerHTML = '';
   $('outText').textContent = '';
   ['bPrev', 'bReset', 'bNext', 'bAuto'].forEach((b) => ($(b).disabled = true));
 }
@@ -1449,7 +1758,7 @@ function gutter(el, onMove, resetKeys) {
 }
 gutter($('gEditor'), (ev) => {
   const r = layout.getBoundingClientRect();
-  sizes['--editor-w'] = Math.round(clamp(r.right - 14 - ev.clientX - 7, 300, r.width - 440));
+  sizes['--editor-w'] = Math.round(clamp(r.right - 16 - ev.clientX - 7, 320, r.width - 440));
 }, ['--editor-w']);
 gutter($('gStage'), (ev) => {
   if (isMobile()) {
@@ -1470,6 +1779,7 @@ function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   if (!w || !h) return;
   renderer.setSize(w, h, false);
+  composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   frameCamera();
@@ -1498,14 +1808,52 @@ renderer.setAnimationLoop((now) => {
     b.vis += (b.visT - b.vis) * Math.min(1, k * 1.4);
     const vis = Math.min(1, Math.max(0, b.vis));
     const show = vis > 0.02;
-    b.mesh.visible = b.label.visible = show;
+    b.mesh.visible = b.label.visible = b.halo.visible = show;
     if (!show) continue;
-    const y = arc * 0.5, z = arc * 1.5;   // rodea por delante a las demás barras
+
+    // al aterrizar después de un cambio de lugar: chispas de su color
+    if (!b.landed && p >= 1) {
+      b.landed = true;
+      emit(b.x, 0.08, 0, b.mat.color, 18, { spread: 1.1, up: 2.2, life: 0.75 });
+    }
+
+    // colores y brillo
+    b.mat.color.lerp(b.bodyT, k);
+    b.mat.emissive.copy(b.mat.color);
+    b.mat.emissiveIntensity += (b.emIT - b.mat.emissiveIntensity) * k;
+    b.emat.color.lerp(b.edgeT, k);
+    b.halo.material.color.lerp(b.haloC, k);
+    b.label.material.color.lerp(b.labelC, k);
+    b.haloO += (b.haloOT - b.haloO) * k;
+    b.lift += (b.liftT - b.lift) * k;
+
+    const comparing = b.state === 'compare';
+    const bob = comparing ? Math.sin(now / 170 + b.id) * 0.07 : 0;
+    const pp = (now - b.popT0) / 520;
+    const pop = pp >= 0 && pp < 1 ? Math.sin(pp * Math.PI * 3) * (1 - pp) * 0.14 : 0;
+    const intro = introT0 ? backOut(clamp01((now - introT0 - b.k * 75) / 750)) : 1;
+    let jump = 0;
+    if (celebT0) {
+      const lt = (now - celebT0 - b.k * 90) / 650;
+      if (lt > 0 && lt < 1) {
+        jump = Math.sin(lt * Math.PI) * 0.9;
+        if (!b.celebrated && lt > 0.35) {
+          b.celebrated = true;
+          emit(b.x, b.h + 1, 0, b.mat.color, 28, { spread: 1.3, up: 4.5, life: 1.3 });
+        }
+      }
+    }
+
+    const hh = Math.max(0.001, b.h * vis * Math.max(0, intro));
+    const y = arc * 0.6 + b.lift + bob + jump;
+    const z = arc * 1.5;   // rodea por delante a las demás barras
     b.mesh.position.set(b.x, y, z);
-    b.mesh.scale.set(vis, Math.max(0.001, b.h * vis), vis);
-    b.label.position.set(b.x, y + b.h * vis + 0.42 * labelScale, z);
-    b.label.material.opacity = vis;
-    b.mat.color.lerp(b.color, k);
+    b.mesh.scale.set(vis * (1 - pop * 0.5), hh * (1 + pop), vis * (1 - pop * 0.5));
+    b.halo.position.set(b.x, 0.006, z);
+    b.halo.scale.setScalar(1 + (comparing ? 0.08 * Math.sin(now / 170) : 0) + arc * 0.3);
+    b.halo.material.opacity = b.haloO * vis * (comparing ? 0.8 + 0.2 * Math.sin(now / 120) : 1);
+    b.label.position.set(b.x, y + hh * (1 + pop) + 0.42 * labelScale, z);
+    b.label.material.opacity = vis * clamp01(intro);
   }
 
   for (const g of ghosts) {
@@ -1515,20 +1863,37 @@ renderer.setAnimationLoop((now) => {
     g.mesh.visible = g.label.visible = show;
     if (!show) continue;
     g.mesh.scale.set(1, g.h, 1);
-    g.mat.opacity = 0.14 * g.vis;
-    g.emat.opacity = 0.7 * g.vis;
+    g.mat.opacity = 0.1 * g.vis;
+    g.emat.opacity = (0.45 + 0.2 * Math.sin(now / 400)) * g.vis;
     g.label.position.set(g.mesh.position.x, g.h + 0.42 * labelScale, 0);
-    g.label.material.opacity = 0.75 * g.vis;
+    g.label.material.opacity = 0.7 * g.vis;
+  }
+
+  for (const p of pads) {
+    p.glow += (p.glowT - p.glow) * k;
+    p.mesh.material.emissiveIntensity = p.glow * (0.8 + 0.2 * Math.sin(now / 200));
+    p.edge.material.opacity = 0.55 + p.glow * 0.7;
   }
 
   for (const p of pointers) {
     if (!p.group.visible) continue;
     p.group.position.lerp(p.target, Math.min(1, k * 1.3));
-    p.cone.position.y = Math.sin(now / 260) * 0.06;
+    p.cone.position.y = Math.sin(now / 260) * 0.08;
+    p.cone.rotation.y += dt * 2;
   }
 
+  for (let i = 0; i < D_MAX; i++) {
+    const i3 = i * 3;
+    dPos[i3 + 1] += dSpd[i] * dt;
+    dPos[i3] += Math.sin(now / 1800 + i) * 0.002;
+    if (dPos[i3 + 1] > 10) dPos[i3 + 1] = 0;
+  }
+  dGeo.attributes.position.needsUpdate = true;
+  updateSparks(dt);
+
+  floorGlow.material.opacity = 0.85 + 0.15 * Math.sin(now / 1500);
   controls.update();
-  renderer.render(scene, camera);
+  composer.render(dt);
 });
 
 // ===========================================================================
