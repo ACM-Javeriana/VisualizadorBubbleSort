@@ -2,78 +2,100 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Burbuja en 3D</title>
-<meta name="description" content="Simulador interactivo en 3D (Three.js) del algoritmo de ordenamiento burbuja en C++ con arreglos estáticos.">
+<meta name="description" content="Simulador interactivo en 3D (Three.js) del ordenamiento burbuja en C++ con arreglos estáticos y código editable.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0b1020;
-    --panel: #121a2e;
-    --panel-2: #18223b;
-    --border: #26314f;
-    --text: #e6ebf5;
-    --muted: #8b97b5;
-    --accent: #4f7cff;
-    --yellow: #ffc53d;
-    --red: #ff5470;
-    --green: #2ed47a;
-    --purple: #c792ea;
-    --kw: #c792ea;
-    --ty: #82aaff;
-    --num: #f78c6c;
-    --str: #c3e88d;
-    --pp: #89ddff;
-    --fn: #ffcb6b;
-    --cm: #637399;
+    --bg: #222a44;
+    --panel: #2b3452;
+    --panel-2: #353f60;
+    --border: #47537b;
+    --text: #f4f6fb;
+    --muted: #b3bdd8;
+    --accent: #6f98ff;
+    --yellow: #ffd54a;
+    --red: #ff6f8a;
+    --green: #4adb95;
+    --code-bg: #262f4c;
+    --kw: #d7a6ff;
+    --ty: #8fb6ff;
+    --num: #ffa07a;
+    --str: #cdeea0;
+    --pp: #92e3ff;
+    --fn: #ffd27a;
+    --cm: #8590b3;
     --radius: 14px;
     --mono: "JetBrains Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
+  html, body { margin: 0; }
   body {
     background: var(--bg);
     color: var(--text);
     font: 15px/1.5 Inter, system-ui, sans-serif;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
-  header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-  header h1 { margin: 0 0 2px; font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
-  header p { margin: 0; color: var(--muted); font-size: 15px; }
+  header { padding: 12px 20px; border-bottom: 1px solid var(--border); flex: none; }
+  header h1 { margin: 0 0 2px; font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 14.5px; }
 
-  main {
-    flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 450px;
-    gap: 14px; padding: 14px; min-height: 0;
-  }
-  .col { display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; }
   .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); }
 
-  /* --- Escenario 3D --- */
-  #stage { position: relative; flex: 1; min-height: 340px; overflow: hidden; }
+  /* ---------- Distribución con paneles redimensionables ---------- */
+  main {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: minmax(0, 1fr) 14px var(--editor-w, 480px);
+    padding: 12px 14px 14px;
+  }
+  #left { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #right { display: flex; min-width: 0; min-height: 0; }
+  #bottom { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+
+  .gutter { flex: none; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; }
+  .gutter::after { content: ""; background: var(--border); border-radius: 99px; transition: background .15s; }
+  .gutter.h { height: 14px; cursor: row-resize; }
+  .gutter.h::after { width: 56px; height: 5px; }
+  .gutter.v { width: 14px; cursor: col-resize; }
+  .gutter.v::after { width: 5px; height: 56px; }
+  .gutter:hover::after, .gutter.drag::after { background: var(--accent); }
+  #gEditorM { display: none; }
+
+  /* ---------- Escenario 3D ---------- */
+  #stage { position: relative; flex: 0 0 var(--stage-h, 58%); min-height: 160px; overflow: hidden; }
   #stage canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
   .legend {
-    position: absolute; top: 12px; left: 12px; display: flex; gap: 12px; flex-wrap: wrap;
-    background: rgba(11,16,32,.72); backdrop-filter: blur(6px);
-    border: 1px solid var(--border); border-radius: 10px; padding: 7px 12px; font-size: 13px;
+    position: absolute; top: 10px; left: 10px; display: flex; gap: 6px 12px; flex-wrap: wrap; max-width: calc(100% - 230px);
+    background: rgba(34,42,68,.78); backdrop-filter: blur(6px);
+    border: 1px solid var(--border); border-radius: 10px; padding: 6px 11px; font-size: 12.5px;
   }
   .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
   .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .legend i.ghost { background: rgba(223,231,255,.18); border: 1px dashed #dfe7ff; }
+  .stage-tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center; }
   .badge {
-    position: absolute; top: 12px; right: 12px; font-weight: 600; font-size: 14px;
-    background: rgba(11,16,32,.72); border: 1px solid var(--border);
-    border-radius: 10px; padding: 7px 12px;
+    font-weight: 600; font-size: 13px; background: rgba(34,42,68,.78);
+    border: 1px solid var(--border); border-radius: 10px; padding: 6px 11px; white-space: nowrap;
   }
+  .stage-tools button { padding: 6px 11px; font-size: 13px; background: rgba(34,42,68,.78); }
   .hint {
     position: absolute; bottom: 10px; right: 12px; font-size: 12px; color: var(--muted);
-    background: rgba(11,16,32,.6); padding: 3px 8px; border-radius: 6px;
+    background: rgba(34,42,68,.7); padding: 3px 8px; border-radius: 6px; pointer-events: none;
+  }
+  .empty {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; color: var(--muted); font-size: 16px;
   }
 
-  /* --- Narración + controles --- */
-  #guide { padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  /* ---------- Narración + botones ---------- */
+  #guide { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
   .say { display: flex; gap: 14px; align-items: flex-start; }
   .tag {
     flex: none; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
@@ -81,12 +103,14 @@
     margin-top: 3px; min-width: 104px; text-align: center;
   }
   .tag[data-type="compare"] { color: var(--yellow); }
-  .tag[data-type="temp"], .tag[data-type="copy"], .tag[data-type="swap"] { color: var(--red); }
-  .tag[data-type="passEnd"], .tag[data-type="done"] { color: var(--green); }
-  #msg { font-size: 18px; line-height: 1.55; min-height: 56px; }
-  #msg .yes { color: var(--red); }
-  #msg .no { color: var(--green); }
+  .tag[data-type="move"], .tag[data-type="save"], .tag[data-type="set"], .tag[data-type="lost"] { color: var(--red); }
+  .tag[data-type="loopEnd"], .tag[data-type="done"] { color: var(--green); }
+  #msg { font-size: 17.5px; line-height: 1.55; min-height: 54px; }
+  #msg .yes { color: var(--yellow); }
+  #msg .no { color: var(--muted); }
   #msg .n { font-weight: 700; color: #fff; }
+  #msg .warn { color: var(--red); font-weight: 600; }
+  #msg code { font: 14.5px var(--mono); background: var(--panel-2); padding: 1px 6px; border-radius: 5px; }
 
   .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   button {
@@ -96,88 +120,133 @@
   }
   button:hover { border-color: var(--accent); }
   button:disabled { opacity: .35; cursor: not-allowed; }
-  button.primary {
-    background: var(--accent); border-color: var(--accent); color: #fff;
-    font-size: 17px; padding: 12px 26px;
-  }
-  button.primary:hover { filter: brightness(1.12); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-size: 17px; padding: 12px 26px; }
+  button.primary:hover { filter: brightness(1.08); }
   button.on { border-color: var(--yellow); color: var(--yellow); }
-  .grow { flex: 1; }
 
   .progress { display: flex; align-items: center; gap: 12px; }
   .bar { flex: 1; height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
   #progFill { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 99px; transition: width .35s; }
-  #progText { font-size: 13px; color: var(--muted); min-width: 120px; text-align: right; }
+  #progText { font-size: 13px; color: var(--muted); min-width: 110px; text-align: right; }
 
-  .try { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-top: 14px; border-top: 1px solid var(--border); }
+  /* ---------- Datos ---------- */
+  #datos { padding: 14px 18px; }
+  .sec-title { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+  .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .v { background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; min-width: 0; }
+  .v .k { font: 12px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .v .val { font: 700 17px var(--mono); }
+  .v.changed { animation: flash .6s ease-out; }
+  @keyframes flash { from { border-color: var(--yellow); background: rgba(255,213,74,.22); } }
+  #stdout {
+    margin-top: 12px; font: 13.5px var(--mono); background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 9px; padding: 8px 12px; color: var(--green); min-height: 38px; white-space: pre-wrap; word-break: break-word;
+  }
+  #stdout .prompt { color: var(--muted); }
+
+  /* ---------- Probar otros números ---------- */
+  .try { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 18px; }
   .try .lbl { color: var(--muted); font-size: 14px; }
   input[type=text] {
-    font: 15px Inter, sans-serif; color: var(--text); background: var(--bg);
+    font: 15px Inter, sans-serif; color: var(--text); background: var(--code-bg);
     border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; flex: 1; min-width: 200px;
   }
   input[type=text]:focus { outline: none; border-color: var(--accent); }
   #err { color: var(--red); font-size: 14px; width: 100%; }
   #err:empty { display: none; }
 
-  /* --- Panel lateral --- */
-  .tabs { display: flex; border-bottom: 1px solid var(--border); }
-  .tabs button {
-    background: none; border: none; border-radius: 0; padding: 12px 16px; color: var(--muted);
+  /* ---------- Editor de código ---------- */
+  #editorCard { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  .tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); flex: none; }
+  .tabs [data-tab] {
+    background: none; border: none; border-radius: 0; padding: 12px 15px; color: var(--muted);
     border-bottom: 2px solid transparent; margin-bottom: -1px;
   }
-  .tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
-  .tabs .file { margin-left: auto; align-self: center; padding-right: 14px; font: 12px var(--mono); color: var(--muted); }
-  #codeCard { flex: 1; display: flex; flex-direction: column; min-height: 300px; overflow: hidden; }
-  #code { position: relative; flex: 1; overflow: auto; padding: 10px 0; font: 13.5px/1.8 var(--mono); scroll-behavior: smooth; }
-  .ln { display: flex; white-space: pre; padding-right: 14px; border-left: 3px solid transparent; transition: background .2s; }
-  .ln .no { flex: none; width: 40px; text-align: right; padding-right: 14px; color: var(--cm); user-select: none; }
-  .ln.on { background: rgba(79,124,255,.16); border-left-color: var(--accent); }
-  #code[data-type="compare"] .ln.on { background: rgba(255,197,61,.13); border-left-color: var(--yellow); }
-  #code[data-type="temp"] .ln.on, #code[data-type="copy"] .ln.on, #code[data-type="swap"] .ln.on { background: rgba(255,84,112,.15); border-left-color: var(--red); }
-  #code[data-type="passEnd"] .ln.on, #code[data-type="done"] .ln.on { background: rgba(46,212,122,.13); border-left-color: var(--green); }
+  .tabs [data-tab].active { color: var(--text); border-bottom-color: var(--accent); }
+  #bRestore { margin-left: auto; margin-right: 10px; padding: 7px 12px; font-size: 13.5px; }
+  .status { flex: none; padding: 8px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: baseline; }
+  .status.ok { color: var(--green); }
+  .status.busy { color: var(--muted); }
+  .status.err { color: #ffd0d9; background: rgba(255,111,138,.16); }
+  .status .hintx { color: var(--muted); margin-left: auto; font-size: 12.5px; white-space: nowrap; }
+  .status.err .hintx { display: none; }
+
+  #editor { position: relative; flex: 1; display: flex; min-height: 0; background: var(--code-bg); font: 13.5px/1.8 var(--mono); font-variant-ligatures: none; }
+  #nums { flex: none; width: 46px; overflow: hidden; color: var(--cm); text-align: right; user-select: none; border-right: 1px solid var(--border); }
+  #numsInner { padding: 10px 10px 10px 0; }
+  #edwrap { position: relative; flex: 1; overflow: hidden; min-width: 0; }
+  #hl, #src {
+    position: absolute; inset: 0; margin: 0; padding: 10px 16px 10px 12px;
+    font: inherit; font-variant-ligatures: none; letter-spacing: 0; tab-size: 4; white-space: pre;
+  }
+  #hl { pointer-events: none; overflow: hidden; }
+  #hlInner { width: max-content; min-width: 100%; }
+  .ln { margin: 0 -16px 0 -12px; padding: 0 16px 0 9px; border-left: 3px solid transparent; min-height: 1.8em; transition: background .2s; }
+  .ln.on { background: rgba(111,152,255,.2); border-left-color: var(--accent); }
+  #hl[data-type="compare"] .ln.on { background: rgba(255,213,74,.17); border-left-color: var(--yellow); }
+  #hl[data-type="move"] .ln.on, #hl[data-type="save"] .ln.on, #hl[data-type="set"] .ln.on, #hl[data-type="lost"] .ln.on { background: rgba(255,111,138,.2); border-left-color: var(--red); }
+  #hl[data-type="loopEnd"] .ln.on, #hl[data-type="done"] .ln.on { background: rgba(74,219,149,.17); border-left-color: var(--green); }
+  .ln.err { background: rgba(255,111,138,.28) !important; border-left-color: var(--red) !important; }
+  #src {
+    color: transparent; background: transparent; caret-color: #fff; border: none; outline: none;
+    resize: none; overflow: auto; z-index: 1; -webkit-text-fill-color: transparent;
+  }
+  #src::selection { background: rgba(111,152,255,.4); }
   .kw { color: var(--kw); } .ty { color: var(--ty); } .num { color: var(--num); }
   .str { color: var(--str); } .pp { color: var(--pp); } .fn { color: var(--fn); } .cm { color: var(--cm); font-style: italic; }
 
   #theory { display: none; flex: 1; overflow: auto; padding: 4px 18px 16px; font-size: 15px; }
   #theory h3 { font-size: 16px; margin: 18px 0 6px; }
-  #theory p, #theory li { color: #c5cde0; }
-  #theory ul, #theory ol { padding-left: 22px; margin: 6px 0; }
+  #theory p, #theory li { color: #d9dfee; }
+  #theory ul { padding-left: 22px; margin: 6px 0; }
   #theory li { margin: 4px 0; }
   #theory code { font: 13px var(--mono); color: var(--fn); }
 
-  /* --- Variables --- */
-  #vars { padding: 14px; }
-  .sec-title { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
-  .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
-  .v { background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; min-width: 0; }
-  .v .k { font: 11.5px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .v .val { font: 700 16px var(--mono); }
-  .v.changed { animation: flash .6s ease-out; }
-  @keyframes flash { from { border-color: var(--yellow); background: rgba(255,197,61,.18); } }
-  .strip { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 12px; font-family: var(--mono); }
-  .strip .brace { color: var(--muted); font-size: 13px; align-self: flex-start; padding-top: 5px; }
-  .cell { display: flex; flex-direction: column; align-items: center; }
-  .cell b {
-    min-width: 32px; padding: 4px; text-align: center; font-size: 13px; border-radius: 6px;
-    background: rgba(79,124,255,.2); border: 1px solid rgba(79,124,255,.5); transition: all .25s;
-  }
-  .cell small { font-size: 10px; color: var(--muted); }
-  .cell.compare b { background: rgba(255,197,61,.22); border-color: var(--yellow); }
-  .cell.swap b { background: rgba(255,84,112,.25); border-color: var(--red); }
-  .cell.sorted b { background: rgba(46,212,122,.2); border-color: var(--green); }
-  #stdout {
-    margin-top: 12px; font: 13px var(--mono); background: #070b16; border: 1px solid var(--border);
-    border-radius: 9px; padding: 8px 10px; color: var(--green); min-height: 36px;
-  }
-  #stdout .prompt { color: var(--muted); }
-
-  @media (max-width: 1000px) {
-    main { grid-template-columns: 1fr; padding: 10px 16px; }
-    #stage { flex: none; height: 50vh; min-height: 300px; }
-    #codeCard { min-height: 0; max-height: 560px; }
-    #msg { font-size: 16px; }
-    .say { flex-direction: column; gap: 8px; }
-    button.primary { flex: 1 1 100%; order: -1; }
+  /* ---------- Celular ---------- */
+  @media (max-width: 860px) {
+    body { height: auto; min-height: 100dvh; overflow: auto; }
+    header { padding: 12px 16px; }
+    header h1 { font-size: 18px; }
+    header p { font-size: 13.5px; }
+    main { display: flex; flex-direction: column; padding: 12px 16px 0; }
+    #left, #bottom, #right { display: contents; }
+    #stage { order: 1; flex: none; height: var(--m-stage-h, 320px); }
+    #gStage { order: 2; }
+    #datos { order: 3; }
+    #editorCard { order: 4; flex: none; height: var(--m-editor-h, 460px); margin-top: 12px; }
+    #gEditor { display: none; }
+    #gEditorM { order: 5; display: flex; }
+    #tryCard { order: 6; padding: 14px 16px; }
+    #guide {
+      order: 7; position: sticky; bottom: 0; z-index: 10; margin: 12px -16px 0;
+      border-radius: 18px 18px 0 0; border-bottom: none;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      box-shadow: 0 -12px 30px rgba(0,0,0,.35); gap: 10px;
+    }
+    .tag { display: none; }
+    #msg { font-size: 15px; line-height: 1.45; min-height: 0; }
+    .actions { flex-wrap: nowrap; gap: 8px; }
+    .actions .txt { display: none; }
+    .actions button { padding: 11px 14px; font-size: 16px; flex: none; }
+    button.primary { flex: 1 1 auto; font-size: 16px; padding: 12px 10px; }
+    .bar { height: 5px; }
+    #progText { display: none; }
+    .legend { top: auto; bottom: 8px; left: 8px; right: 8px; max-width: none; gap: 4px 10px; padding: 5px 9px; font-size: 11px; }
+    .stage-tools { top: 8px; right: 8px; }
+    .badge, .stage-tools button { font-size: 12px; padding: 5px 9px; }
+    .hint { display: none; }
+    #editor { font-size: 12px; }
+    #nums { width: 38px; }
+    .tabs [data-tab] { padding: 11px 11px; font-size: 14px; }
+    #bRestore .txt { display: none; }
+    .status .hintx { display: none; }
+    #theory { font-size: 14px; padding: 2px 16px 14px; }
+    .vgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+    .try .lbl { width: 100%; }
+    .try input[type=text] { flex: 1 1 100%; min-width: 0; order: 1; }
+    .try #bCustom { order: 2; flex: 1; }
+    .try #bRandom { flex: 1 1 100%; }
+    .try #err { order: 3; }
   }
 </style>
 <script type="importmap">
@@ -192,41 +261,55 @@
 <body>
 <header>
   <h1>Ordenamiento burbuja en C++</h1>
-  <p>Pulsa <b>«Siguiente paso»</b> y mira cómo el programa ordena los números de menor a mayor, línea por línea.</p>
+  <p>Pulsa <b>«Siguiente paso»</b> para ver cómo el programa ordena los números. También puedes editar el código y ver qué pasa.</p>
 </header>
 
-<main>
-  <div class="col">
+<main id="layout">
+  <section id="left">
     <div id="stage" class="card">
       <div class="legend">
         <span><i style="background:var(--accent)"></i>Por ordenar</span>
         <span><i style="background:var(--yellow)"></i>Comparando</span>
-        <span><i style="background:var(--red)"></i>Cambiando de lugar</span>
+        <span><i style="background:var(--red)"></i>Moviendo</span>
         <span><i style="background:var(--green)"></i>Ya en su lugar</span>
+        <span><i class="ghost"></i>Copia en memoria</span>
       </div>
-      <div class="badge" id="passBadge">—</div>
-      <div class="hint">Arrastra para girar la vista</div>
+      <div class="stage-tools">
+        <span class="badge" id="badge">—</span>
+        <button id="bCenter" title="Volver a la vista inicial">⌖ Centrar</button>
+      </div>
+      <div class="hint">Arrastra para girar · clic derecho para moverte · rueda para acercar</div>
+      <div class="empty" id="empty">El código tiene un error.<br>Corrígelo o pulsa «Restablecer código».</div>
     </div>
 
-    <div id="guide" class="card">
-      <div class="say">
-        <div class="tag" id="tag">inicio</div>
-        <div id="msg"></div>
+    <div class="gutter h" id="gStage" title="Arrastra para cambiar el tamaño (doble clic para restablecer)"></div>
+
+    <div id="bottom">
+      <div id="guide" class="card">
+        <div class="say">
+          <div class="tag" id="tag">inicio</div>
+          <div id="msg"></div>
+        </div>
+        <div class="actions">
+          <button id="bReset" title="Empezar de nuevo" aria-label="Empezar de nuevo">⟲<span class="txt"> Empezar de nuevo</span></button>
+          <button id="bPrev" title="Atrás" aria-label="Atrás">◀<span class="txt"> Atrás</span></button>
+          <button id="bNext" class="primary">Siguiente paso ▶</button>
+          <button id="bAuto" title="Ver automático" aria-label="Ver automático">▶<span class="txt"> Ver automático</span></button>
+        </div>
+        <div class="progress">
+          <div class="bar"><div id="progFill"></div></div>
+          <span id="progText"></span>
+        </div>
       </div>
 
-      <div class="actions">
-        <button id="bReset">⟲ Empezar de nuevo</button>
-        <button id="bPrev">◀ Atrás</button>
-        <button id="bNext" class="primary">Siguiente paso ▶</button>
-        <button id="bAuto">▶ Ver automático</button>
+      <div id="datos" class="card">
+        <p class="sec-title">Lo que guarda el programa en memoria</p>
+        <div class="vgrid" id="vgrid"></div>
+        <div id="stdout"><span class="prompt">Pantalla del programa:</span>
+<span id="outText"></span></div>
       </div>
 
-      <div class="progress">
-        <div class="bar"><div id="progFill"></div></div>
-        <span id="progText"></span>
-      </div>
-
-      <div class="try">
+      <div id="tryCard" class="card try">
         <span class="lbl">¿Probar con otros números?</span>
         <button id="bRandom">🎲 Números al azar</button>
         <input type="text" id="custom" placeholder="Escribe tus números, p. ej.: 7, 3, 9, 1" aria-label="Tus números">
@@ -234,16 +317,25 @@
         <span id="err"></span>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="col">
-    <div id="codeCard" class="card">
+  <div class="gutter v" id="gEditor" title="Arrastra para cambiar el tamaño (doble clic para restablecer)"></div>
+
+  <section id="right">
+    <div id="editorCard" class="card">
       <div class="tabs">
         <button class="active" data-tab="code">Código</button>
         <button data-tab="theory">¿Cómo funciona?</button>
-        <span class="file">burbuja.cpp</span>
+        <button id="bRestore" title="Volver al código original">↺<span class="txt"> Restablecer código</span></button>
       </div>
-      <div id="code"></div>
+      <div class="status ok" id="status"><span id="statusText">✓ El código funciona</span><span class="hintx">Puedes escribir aquí</span></div>
+      <div id="editor">
+        <div id="nums"><div id="numsInner"></div></div>
+        <div id="edwrap">
+          <div id="hl" aria-hidden="true"><div id="hlInner"></div></div>
+          <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Código C++"></textarea>
+        </div>
+      </div>
       <div id="theory">
         <h3>La idea en palabras simples</h3>
         <p>Imagina una fila de cartas numeradas. Te paras en la primera casilla y la comparas con
@@ -259,575 +351,1192 @@
         </ul>
         <h3>¿Por qué hace falta <code>temporal</code>?</h3>
         <p>Si escribiéramos directamente <code>arreglo[j] = arreglo[i]</code>, el número que estaba en la casilla
-           <code>j</code> se borraría. Por eso primero lo guardamos en la caja, luego movemos el otro número, y
-           por último sacamos el de la caja. Es como cambiar el contenido de dos vasos usando un tercer vaso vacío.</p>
+           <code>j</code> se borraría. Es como cambiar el contenido de dos vasos: necesitas un tercer vaso vacío.</p>
+        <p><b>Pruébalo:</b> borra la línea de <code>temporal</code> en el código y mira cómo se pierden números.
+           Si algo se rompe, pulsa «Restablecer código».</p>
+        <h3>Las barras transparentes</h3>
+        <p>Cuando un número se copia a otro lugar, la memoria todavía guarda el valor viejo en su casilla.
+           Esa copia se dibuja como una barra transparente, hasta que se escribe otro número encima.</p>
         <h3>¿Cuánto trabajo hace?</h3>
         <p>Con 8 números hace 28 comparaciones; con 100 números, 4 950. Cuantos más números, el trabajo crece muy rápido.
            Por eso es ideal para aprender, pero en programas grandes se usan métodos más rápidos.</p>
       </div>
     </div>
+  </section>
 
-    <div id="vars" class="card">
-      <p class="sec-title">Lo que guarda el programa en memoria</p>
-      <div class="vgrid" id="vgrid"></div>
-      <div class="strip" id="strip"></div>
-      <div id="stdout"><span class="prompt">Pantalla del programa:</span><br><span id="outText"></span></div>
-    </div>
-  </div>
+  <div class="gutter h" id="gEditorM" title="Arrastra para cambiar el tamaño"></div>
 </main>
 
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-// ---------------------------------------------------------------------------
-// Constantes
-// ---------------------------------------------------------------------------
-const SP = 1.15;          // separación entre barras
-const BAR_W = 0.8;
-const MAX_H = 5.2;
-const AUTO_DELAY = 1700;  // ms entre pasos en modo automático
-const ANIM = 750;         // ms de cada movimiento
-const COLORS = {
-  base:    new THREE.Color('#4f7cff'),
-  compare: new THREE.Color('#ffc53d'),
-  swap:    new THREE.Color('#ff5470'),
-  sorted:  new THREE.Color('#2ed47a'),
-};
 const $ = (id) => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
 
-// ---------------------------------------------------------------------------
-// Código C++ mostrado (arreglo estático, sin funciones ni referencias)
-// ---------------------------------------------------------------------------
-function cppSource(vals) {
-  return [
-    '#include <iostream>',
-    'using namespace std;',
-    '',
-    'int main() {',
-    `    int arreglo[${vals.length}] = {${vals.join(', ')}};`,
-    `    int numeroDeDatos = ${vals.length};`,
-    '',
-    '    for(int i = 0; i<numeroDeDatos; i++){',
-    '        for(int j = i+1; j<numeroDeDatos; j++){',
-    '            if(arreglo[j]<arreglo[i]){',
-    '                int temporal = arreglo[j];',
-    '                arreglo[j] = arreglo[i];',
-    '                arreglo[i] = temporal;',
-    '            }',
-    '        }',
-    '    }',
-    '',
-    '    for(int i = 0; i<numeroDeDatos; i++){',
-    '        cout << arreglo[i] << " ";',
-    '    }',
-    '    return 0;',
-    '}',
-  ];
+// ===========================================================================
+// Código original
+// ===========================================================================
+const ORIGINAL = (vals) => [
+  '#include <iostream>',
+  'using namespace std;',
+  '',
+  'int main() {',
+  `    int arreglo[${vals.length}] = {${vals.join(', ')}};`,
+  `    int numeroDeDatos = ${vals.length};`,
+  '',
+  '    for(int i = 0; i<numeroDeDatos; i++){',
+  '        for(int j = i+1; j<numeroDeDatos; j++){',
+  '            if(arreglo[j]<arreglo[i]){',
+  '                int temporal = arreglo[j];',
+  '                arreglo[j] = arreglo[i];',
+  '                arreglo[i] = temporal;',
+  '            }',
+  '        }',
+  '    }',
+  '',
+  '    for(int i = 0; i<numeroDeDatos; i++){',
+  '        cout << arreglo[i] << " ";',
+  '    }',
+  '    return 0;',
+  '}',
+].join('\n');
+
+// ===========================================================================
+// Intérprete de un subconjunto de C++ (enteros, arreglos estáticos, for/if/while, cout).
+// Traduce cada línea a JavaScript instrumentado para grabar paso a paso lo que ocurre.
+// ===========================================================================
+class CodeError extends Error {
+  constructor(line, msg) { super(msg); this.line = line; }
 }
 
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const TOKEN = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|(#\w+\s*<[^>]+>)|\b(for|if|return|using|namespace)\b|\b(int)\b|\b(\d+)\b|\b(main|cout)\b/g;
+const TYPE_SRC = String.raw`\b(?:const\s+)?(?:unsigned\s+|signed\s+)?(?:long\s+long|long|int|short|bool|char|float|double|auto|size_t)\b\s+`;
+const ARRAY_DECL = new RegExp(TYPE_SRC + String.raw`([A-Za-z_]\w*)\s*\[\s*([^\]]*)\]\s*(?:=\s*\{([^}]*)\})?\s*;`, 'g');
+const SCALAR_DECL = new RegExp(TYPE_SRC + '(?=[A-Za-z_])', 'g');
+
+function stripComments(src) {
+  let out = '', i = 0, inBlock = false, q = null;
+  while (i < src.length) {
+    const c = src[i], d = src[i + 1];
+    if (inBlock) {
+      if (c === '*' && d === '/') { inBlock = false; out += '  '; i += 2; }
+      else { out += c === '\n' ? '\n' : ' '; i++; }
+    } else if (q) {
+      out += c;
+      if (c === '\\') { out += d ?? ''; i += 2; continue; }
+      if (c === q || c === '\n') q = null;
+      i++;
+    } else if (c === '/' && d === '/') {
+      while (i < src.length && src[i] !== '\n') { out += ' '; i++; }
+    } else if (c === '/' && d === '*') { inBlock = true; out += '  '; i += 2; }
+    else { if (c === '"' || c === "'") q = c; out += c; i++; }
+  }
+  return out;
+}
+const noStrings = (t) => t.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+
+function matchParen(s, open) {
+  let depth = 0, q = null;
+  for (let i = open; i < s.length; i++) {
+    const c = s[i];
+    if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+    if (c === '"' || c === "'") q = c;
+    else if (c === '(') depth++;
+    else if (c === ')' && --depth === 0) return i;
+  }
+  return -1;
+}
+function splitTop(s, sep) {
+  const parts = []; let depth = 0, last = 0, q = null;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+    if (c === '"' || c === "'") q = c;
+    else if (c === '(' || c === '[') depth++;
+    else if (c === ')' || c === ']') depth--;
+    else if (c === sep && depth === 0) { parts.push(s.slice(last, i)); last = i + 1; }
+  }
+  parts.push(s.slice(last));
+  return parts;
+}
+
+function precheck(clean) {
+  let depth = 0, lastCode = 1;
+  clean.forEach((raw, idx) => {
+    const L = idx + 1;
+    const s = noStrings(raw).trim();
+    if (!s) return;
+    lastCode = L;
+    if (/\bcin\b/.test(s)) throw new CodeError(L, 'Este simulador no puede leer datos del teclado (cin). Escribe los números directamente en el arreglo.');
+    if (/\bvector\b/.test(s)) throw new CodeError(L, 'Usa un arreglo estático (por ejemplo: int arreglo[8] = {...};) en lugar de vector.');
+    if (/\bstring\b/.test(s)) throw new CodeError(L, 'Este simulador solo trabaja con números enteros.');
+    let p = 0;
+    for (const ch of s) {
+      if (ch === '{') depth++;
+      else if (ch === '}' && --depth < 0) throw new CodeError(L, 'Sobra una llave «}» en esta línea.');
+      else if (ch === '(') p++;
+      else if (ch === ')' && --p < 0) throw new CodeError(L, 'Sobra un paréntesis «)» en esta línea.');
+    }
+    if (p !== 0) throw new CodeError(L, 'Falta cerrar un paréntesis «)» en esta línea.');
+    if (s.startsWith('#') || /[;{},]$/.test(s)) return;
+    if (/^(\}\s*)?(else\b|for\b|while\b|if\b|int\s+main\b|do\b)/.test(s)) return;
+    throw new CodeError(L, 'Falta un punto y coma «;» al final de esta línea.');
+  });
+  if (depth > 0) throw new CodeError(lastCode, 'Falta cerrar una llave «}».');
+}
+
+function bodyHasLoop(clean, idx) {
+  let depth = 0, opened = false;
+  for (let r = idx; r < clean.length; r++) {
+    const t = noStrings(clean[r]);
+    if (r > idx && opened && /\b(for|while)\s*\(/.test(t)) return true;
+    for (const ch of t) { if (ch === '{') { depth++; opened = true; } else if (ch === '}') depth--; }
+    if (opened && depth <= 0) return false;
+    if (!opened && r > idx && t.trim() && !t.trim().startsWith('{')) return /\b(for|while)\s*\(/.test(t);
+  }
+  return false;
+}
+
+function transpile(src) {
+  const clean = stripComments(src).split('\n');
+  precheck(clean);
+  if (!clean.some((l) => /\bint\s+main\s*\(/.test(l))) throw new CodeError(null, 'Falta la función principal: int main() { ... }');
+
+  const scalars = [], arrays = [], conds = [], forInfo = {}, assigned = {};
+  const addScalar = (n) => { if (!scalars.includes(n) && !arrays.includes(n)) scalars.push(n); };
+
+  const out = clean.map((line, idx) => {
+    const L = idx + 1;
+    let s = line;
+    if (/^\s*#/.test(s)) return '';
+    s = s.replace(/\busing\s+namespace\s+std\s*;/, '').replace(/\bstd::/g, '');
+    s = s.replace(/\bint\s+main\s*\(\s*(?:void)?\s*\)/, '__main = function()');
+    s = s.replace(/\(\s*(?:int|long|double|float|short)\s*\)/g, '');
+    s = s.replace(/sizeof\s*\(?\s*(\w+)\s*\)?\s*\/\s*sizeof\s*\(?\s*\1\s*\[\s*0\s*\]\s*\)?/g, '$1.length');
+
+    // variables que se asignan en esta línea (x = ..., sin contar ==)
+    assigned[L] = [...noStrings(line).matchAll(/\b([A-Za-z_]\w*)\s*=(?!=)/g)].map((m) => m[1]);
+
+    s = s.replace(ARRAY_DECL, (m, name, size, init) => {
+      if (!arrays.includes(name)) arrays.push(name);
+      return `${name} = __arr(${JSON.stringify(name)}, [${init ?? ''}], ${size.trim() || 'null'});`;
+    });
+    s = s.replace(SCALAR_DECL, (m, off, str) => {
+      const rest = str.slice(off + m.length);
+      const end = rest.search(/[;)]/);
+      splitTop(end < 0 ? rest : rest.slice(0, end), ',').forEach((d) => {
+        const n = d.split('=')[0].trim();
+        if (/^[A-Za-z_]\w*$/.test(n)) addScalar(n);
+      });
+      return '';
+    });
+    s = s.replace(/\bcout\s*<<([^;]*);/g, (m, rest) =>
+      `__out(${rest.split('<<').map((p) => (p.trim() === 'endl' ? '"\\n"' : p.trim())).join(', ')});`);
+    s = s.replace(/\breturn\b[^;]*;/, 'return;');
+
+    // cabeceras for / while / if
+    const hdr = /\b(for|while|if)\s*\(/g;
+    let m, built = '', last = 0, hadHeader = false;
+    while ((m = hdr.exec(s))) {
+      const open = m.index + m[0].length - 1;
+      const close = matchParen(s, open);
+      if (close < 0) throw new CodeError(L, 'Falta cerrar un paréntesis «)» en esta línea.');
+      const inner = s.slice(open + 1, close);
+      let rep;
+      if (m[1] === 'for') {
+        const parts = splitTop(inner, ';');
+        if (parts.length !== 3) throw new CodeError(L, 'El for debe tener tres partes separadas por «;».');
+        const [A, B, C] = parts.map((p) => p.trim());
+        const cid = conds.push({ src: B || 'true', kind: 'for' }) - 1;
+        const v = (A.match(/^([A-Za-z_]\w*)\s*=/) || C.match(/([A-Za-z_]\w*)/) || [])[1] || null;
+        forInfo[L] = { v, cond: B || 'true', nested: bodyHasLoop(clean, idx) };
+        rep = `for(${[`__m(${L},"for")`, A].filter(Boolean).join(', ')}; (__m(${L},"for",1), __r(${B || 'true'}, ${cid})); ${[`__m(${L},"for")`, C].filter(Boolean).join(', ')})`;
+      } else {
+        const cid = conds.push({ src: inner.trim(), kind: m[1] }) - 1;
+        rep = `${m[1]}((__m(${L},"${m[1]}"), __r(${inner}, ${cid})))`;
+      }
+      built += s.slice(last, m.index) + rep;
+      last = close + 1;
+      hdr.lastIndex = close + 1;
+      hadHeader = true;
+    }
+    s = built + s.slice(last);
+
+    // marcar instrucciones normales
+    if (!hadHeader && s.trim() && !/^[\s{}]*$/.test(s) && !/__main\s*=\s*function/.test(s)) {
+      const at = s.search(/[^\s{}]/);
+      const head = s.slice(0, at);
+      let rest = s.slice(at);
+      const mark = (r) => {
+        if (/^(return|break|continue)\b/.test(r)) {
+          const semi = r.indexOf(';');
+          return `{ __m(${L},"stmt"); ${r.slice(0, semi + 1)} }${r.slice(semi + 1)}`;
+        }
+        return `__m(${L},"stmt"), ${r}`;
+      };
+      if (/^else\b/.test(rest)) {
+        const r2 = rest.replace(/^else\s*/, '');
+        if (r2 && !r2.startsWith('{')) rest = 'else ' + mark(r2);
+      } else rest = mark(rest);
+      s = head + rest;
+    }
+    return s;
+  });
+
+  const all = [...new Set([...scalars, ...arrays])];
+  const code = `'use strict';\n${all.length ? `var ${all.join(', ')};` : ''} var __main;\n` +
+    `__g(function () { return {${scalars.map((n) => `${JSON.stringify(n)}: ${n}`).join(', ')}}; });\n` +
+    out.join('\n') +
+    `\n;if (typeof __main !== 'function') throw new Error('__nomain');\n__main();`;
+  return { code, clean, scalars, arrays, conds, forInfo, assigned };
+}
+
+class Runtime {
+  constructor(T) {
+    this.T = T;
+    this.raw = [];
+    this.pending = null;
+    this.getter = () => ({});
+    this.before = {};
+    this.arrName = null;
+    this.mem = null;
+    this.cell = [];
+    this.pad = {};
+    this.padOrder = [];
+    this.val = [];
+    this.out = '';
+    this.comps = 0;
+    this.moves = 0;
+    this.count = 0;
+    this.m = (L, kind = 'stmt', cont = 0) => {
+      if (cont && this.pending && this.pending.line === L && this.pending.kind === 'for') return;
+      this.finalize();
+      if (++this.count > 6000) throw new CodeError(L, 'El programa está dando demasiados pasos. Puede que un ciclo nunca termine: revisa la condición y el i++.');
+      this.pending = { line: L, kind, reads: [], writes: [], cond: null, condId: null, decl: null, printed: '' };
+    };
+    this.r = (v, id) => {
+      if (this.pending) { this.pending.cond = !!v; this.pending.condId = id; }
+      return v;
+    };
+    this.g = (fn) => { this.getter = fn; this.before = this.vars(); };
+    this.o = (...parts) => {
+      const s = parts.map((p) => (typeof p === 'boolean' ? (p ? '1' : '0') : String(p))).join('');
+      this.out += s;
+      if (this.pending) this.pending.printed += s;
+    };
+    this.arr = (name, init, size) => {
+      const line = this.pending?.line ?? null;
+      const n = size == null ? init.length : Number(size);
+      if (!Number.isInteger(n) || n < 1) throw new CodeError(line, 'El tamaño del arreglo debe ser un número entero positivo.');
+      if (init.length > n) throw new CodeError(line, `Hay ${init.length} números pero el arreglo solo tiene ${n} casillas.`);
+      const data = Array.from({ length: n }, (_, k) => (k < init.length ? Math.trunc(Number(init[k])) : 0));
+      if (data.some(Number.isNaN)) throw new CodeError(line, 'El arreglo solo puede tener números enteros.');
+      if (this.arrName) return data;   // solo se dibuja el primer arreglo
+      if (n < 2 || n > 16) throw new CodeError(line, 'Para poder dibujarlo, el arreglo debe tener entre 2 y 16 casillas.');
+      this.arrName = name;
+      this.mem = data;
+      data.forEach((v, k) => { this.cell[k] = this.newMesh(v); });
+      if (this.pending) this.pending.decl = { name, n };
+      const self = this;
+      const isIdx = (p) => typeof p === 'string' && /^-?\d+$/.test(p);
+      const bounds = (k, verb) => {
+        if (k < 0 || k >= n) throw new CodeError(self.pending?.line ?? null,
+          `Se intentó ${verb} ${name}[${k}], pero esa casilla no existe: el arreglo solo tiene casillas de la 0 a la ${n - 1}.`);
+      };
+      return new Proxy(data, {
+        get(t, p) {
+          if (isIdx(p)) { const k = +p; bounds(k, 'leer'); self.pending?.reads.push({ k, v: t[k] }); return t[k]; }
+          return t[p];
+        },
+        set(t, p, v) {
+          if (isIdx(p)) {
+            const k = +p; bounds(k, 'escribir en');
+            const nv = Math.trunc(Number(v));
+            if (Number.isNaN(nv)) throw new CodeError(self.pending?.line ?? null, `Se intentó guardar algo que no es un número en ${name}[${k}].`);
+            t[k] = nv;
+            self.pending?.writes.push({ k, v: nv });
+            return true;
+          }
+          t[p] = v;
+          return true;
+        },
+      });
+    };
+  }
+
+  newMesh(v) { this.val.push(v); return this.val.length - 1; }
+
+  vars() {
+    const o = this.getter();
+    const r = {};
+    for (const n of this.T.scalars) r[n] = typeof o[n] === 'number' || typeof o[n] === 'boolean' ? o[n] : undefined;
+    return r;
+  }
+
+  // Cierra el paso pendiente: deduce qué barra se movió a dónde y guarda una foto del estado.
+  finalize() {
+    const p = this.pending;
+    if (!p) return;
+    this.pending = null;
+    const after = this.vars(), before = this.before;
+    const events = [], moved = new Set(), spawn = {};
+    const scal = new Set(this.T.scalars);
+    const changed = this.T.scalars.filter((n) => after[n] !== before[n]);
+    const targets = [...new Set([...(this.T.assigned[p.line] || []).filter((n) => scal.has(n)), ...changed])];
+    const lastRead = (pred) => { for (let i = p.reads.length - 1; i >= 0; i--) if (pred(p.reads[i])) return p.reads[i]; return null; };
+
+    if (this.arrName && p.kind === 'stmt') {
+      for (const name of targets) {
+        const v = after[name];
+        const rd = lastRead((r) => r.v === v);
+        if (rd) {
+          // la variable recibe un número del arreglo: la barra viaja a su "caja"
+          if (this.pad[name] != null) events.push({ t: 'lostPad', name, v: this.val[this.pad[name]] });
+          let id = this.cell[rd.k];
+          if (id == null) { id = this.newMesh(rd.v); spawn[id] = { cell: rd.k }; }
+          else this.cell[rd.k] = null;
+          this.pad[name] = id;
+          if (!this.padOrder.includes(name)) this.padOrder.push(name);
+          moved.add(id);
+          events.push({ t: 'save', name, k: rd.k, v });
+        } else if (this.pad[name] != null && changed.includes(name)) {
+          events.push({ t: 'lostPad', name, v: this.val[this.pad[name]] });
+          this.pad[name] = null;
+        } else if (changed.includes(name)) events.push({ t: 'scalar', name, v });
+      }
+    } else if (p.kind === 'stmt') {
+      for (const name of changed) events.push({ t: 'scalar', name, v: after[name] });
+    }
+
+    for (const w of p.writes) {
+      const { k, v } = w;
+      const cur = this.cell[k];
+      let srcId = null, ev = null;
+      const rd = lastRead((r) => r.v === v && r.k !== k);
+      if (rd) {
+        srcId = this.cell[rd.k];
+        if (srcId == null) { srcId = this.newMesh(v); spawn[srcId] = { cell: rd.k }; }
+        else this.cell[rd.k] = null;
+        ev = { t: 'move', from: rd.k, to: k, v };
+      } else {
+        const nm = this.padOrder.find((x) => this.pad[x] != null && after[x] === v && this.val[this.pad[x]] === v);
+        if (nm) { srcId = this.pad[nm]; this.pad[nm] = null; ev = { t: 'fromPad', name: nm, to: k, v }; }
+      }
+      if (srcId != null) {
+        if (cur != null && cur !== srcId) events.push({ t: 'lost', k, v: this.val[cur] });
+        this.cell[k] = srcId;
+        moved.add(srcId);
+        events.push(ev);
+      } else if (cur != null) {
+        const old = this.val[cur];
+        this.val[cur] = v;
+        if (old !== v) { events.push({ t: 'set', k, v, old }); moved.add(cur); }
+      } else {
+        const id = this.newMesh(v);
+        this.cell[k] = id;
+        spawn[id] = { cell: k };
+        moved.add(id);
+        events.push({ t: 'set', k, v });
+      }
+    }
+
+    if ((p.kind === 'if' || p.kind === 'while') && p.reads.length) this.comps++;
+    this.moves += p.writes.length;
+
+    this.raw.push({
+      line: p.line, kind: p.kind, cond: p.cond, condId: p.condId, reads: p.reads, decl: p.decl,
+      printed: p.printed, events, vars: after, mem: this.mem ? this.mem.slice() : null,
+      cell: this.cell.slice(), pad: { ...this.pad }, val: this.val.slice(), moved: [...moved], spawn,
+      out: this.out, comps: this.comps, moves: this.moves,
+    });
+    this.before = after;
+  }
+}
+
+function translateError(e, line) {
+  if (e instanceof CodeError) return e;
+  const msg = String(e?.message || e);
+  if (msg === '__nomain') return new CodeError(null, 'Falta la función principal: int main() { ... }');
+  const m = msg.match(/^(\w+) is not defined/) || msg.match(/'(\w+)' is not defined/);
+  if (m) return new CodeError(line, `No reconozco «${m[1]}». ¿Está bien escrito? Si es una variable, hay que declararla antes (por ejemplo: int ${m[1]} = 0;).`);
+  if (/is not a function/.test(msg)) return new CodeError(line, 'Este simulador no reconoce esa función. Usa solo for, if, while, arreglos y cout.');
+  return new CodeError(line, 'Hay algo en esta línea que el simulador no entiende.');
+}
+
+// ---------------------------------------------------------------------------
+// Convertir la grabación en pasos con explicación en español sencillo
+// ---------------------------------------------------------------------------
+const OPS = { '<': 'es menor que', '>': 'es mayor que', '<=': 'es menor o igual que', '>=': 'es mayor o igual que', '==': 'es igual a', '!=': 'es distinto de' };
+const N = (v) => `<span class="n">${v}</span>`;
+const fmt = (v) => (v === undefined ? '—' : String(v));
+const escHTML = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function condWords(src, reads, vars, arrName) {
+  const ph = [];
+  let k = 0;
+  let t = src.replace(new RegExp(String.raw`\b${arrName}\s*\[[^\]]*\]`, 'g'), (m) => {
+    const r = reads[k++];
+    ph.push(r ? String(r.v) : m);
+    return `\u0001${ph.length - 1}\u0001`;
+  });
+  t = t.replace(/\b[A-Za-z_]\w*\b/g, (w) => (w in vars && vars[w] !== undefined ? String(vars[w]) : w));
+  t = t.replace(/\u0001(\d+)\u0001/g, (_, d) => ph[+d]);
+  const calc = (x) => {   // "5 - 1" → "5 - 1 (= 4)"
+    if (!/^[\d\s+\-*/()]+$/.test(x) || !/\d\s*[+\-*/]\s*\d/.test(x)) return x;
+    try { const r = Function(`return (${x})`)(); return Number.isFinite(r) ? `${x} (= ${Math.trunc(r)})` : x; } catch { return x; }
+  };
+  const m = t.match(/^\s*(.+?)\s*(<=|>=|==|!=|<|>)\s*(.+?)\s*$/);
+  if (m && !/[<>=!&|]/.test(m[1]) && !/[<>=!&|]/.test(m[3])) return `¿${escHTML(calc(m[1]))} ${OPS[m[2]]} ${escHTML(calc(m[3]))}?`;
+  return `¿<code>${escHTML(t.trim())}</code>?`;
+}
+
+const EV = {
+  save: (e) => `Guardamos el ${N(e.v)} (de la casilla ${e.k}) en la caja <b>${e.name}</b> para no perderlo.`,
+  move: (e) => `El ${N(e.v)} pasa de la casilla ${e.from} a la casilla ${e.to} (en la casilla ${e.from} queda una copia).`,
+  fromPad: (e) => `El ${N(e.v)} sale de la caja <b>${e.name}</b> y entra en la casilla ${e.to}.`,
+  set: (e) => `La casilla ${e.k} ahora vale ${N(e.v)}${e.old !== undefined ? ` (antes tenía ${e.old})` : ''}.`,
+  lost: (e) => `<span class="warn">⚠️ El ${e.v} de la casilla ${e.k} se perdió: se escribió otro número encima sin guardarlo antes.</span>`,
+  lostPad: (e) => `<span class="warn">⚠️ El ${e.v} que estaba en la caja ${e.name} se perdió.</span>`,
+  scalar: (e) => `Ahora <code>${e.name}</code> vale ${N(fmt(e.v))}.`,
+};
+
+function eventsType(events) {
+  const ts = events.map((e) => e.t);
+  if (ts.includes('lost') || ts.includes('lostPad')) return 'lost';
+  if (ts.includes('save')) return 'save';
+  if (ts.includes('move') || ts.includes('fromPad')) return 'move';
+  if (ts.includes('set')) return 'set';
+  return null;
+}
+
+function execute(src) {
+  const T = transpile(src);
+  const R = new Runtime(T);
+  let fn;
+  try { fn = new Function('__m', '__r', '__arr', '__out', '__g', T.code); }
+  catch { throw new CodeError(null, 'Hay algo mal escrito en el código. Revisa paréntesis, llaves «{ }» y punto y coma «;».'); }
+  try { fn(R.m, R.r, R.arr, R.o, R.g); }
+  catch (e) { throw translateError(e, R.pending?.line ?? null); }
+  R.finalize();
+  if (!R.arrName || !R.raw.length) throw new CodeError(null, 'No encontré ningún arreglo para dibujar. Declara uno, por ejemplo: int arreglo[5] = {4, 2, 5, 1, 3};');
+
+  const arr = R.arrName;
+  const steps = [];
+  const active = {};
+  let prefix = null;
+
+  R.raw.forEach((st, si) => {
+    let type = 'assign', msg = '', lines = [st.line];
+    const evType = eventsType(st.events);
+    const evMsg = st.events.filter((e) => st.kind === 'stmt' || e.t !== 'scalar').map((e) => EV[e.t](e)).join(' ');
+
+    if (st.kind === 'for') {
+      const info = T.forInfo[st.line] || {};
+      const v = info.v, val = st.vars[v];
+      const cw = condWords(info.cond || 'true', st.reads, st.vars, arr);
+      if (st.cond) {
+        const lead = active[st.line] ? `<code>${v}</code> aumenta a ${N(val)}.` : `Empieza el ciclo de <code>${v}</code> con ${v} = ${N(val)}.`;
+        active[st.line] = true;
+        if (!info.nested && si < R.raw.length - 1) {   // ciclos internos: se unen al siguiente paso
+          prefix = prefix ? { lines: [...prefix.lines, st.line], msg: `${prefix.msg} ${lead}` } : { lines: [st.line], msg: lead };
+          return;
+        }
+        type = 'loop';
+        msg = `${lead} ${cw} <b class="yes">Sí</b> → entramos al ciclo.`;
+      } else {
+        active[st.line] = false;
+        type = 'loopEnd';
+        msg = `<code>${v}</code> vale ${N(val)}: ${cw} <b class="no">No</b> → el ciclo de <code>${v}</code> termina.`;
+      }
+    } else if (st.kind === 'if' || st.kind === 'while') {
+      const c = T.conds[st.condId] || { src: '' };
+      const intro = st.reads.length === 2
+        ? `Comparamos el ${N(st.reads[0].v)} (casilla ${st.reads[0].k}) con el ${N(st.reads[1].v)} (casilla ${st.reads[1].k}). ` : '';
+      msg = intro + condWords(c.src, st.reads, st.vars, arr) +
+        (st.cond ? ` <b class="yes">Sí</b> → se ejecuta lo que está dentro del ${st.kind}.`
+                 : ` <b class="no">No</b> → ${st.kind === 'if' ? 'se salta lo que está dentro del if.' : 'el while termina.'}`);
+      if (evMsg) msg += ' ' + evMsg;
+      type = evType || (st.reads.length ? 'compare' : 'cond');
+    } else if (st.decl) {
+      type = 'decl';
+      msg = `Creamos el arreglo <code>${st.decl.name}</code> con ${st.decl.n} casillas (numeradas de la 0 a la ${st.decl.n - 1}) y guardamos los números en él.`;
+    } else if (st.printed) {
+      type = 'print';
+      msg = `Se muestra en la pantalla: <code>${escHTML(st.printed.replace(/\n/g, '⏎'))}</code>`;
+    } else if (evMsg) {
+      type = evType || 'assign';
+      msg = evMsg;
+    } else if (/^\s*return\b/.test(T.clean[st.line - 1])) {
+      type = 'end';
+      msg = 'El programa termina (<code>return 0</code>).';
+    } else {
+      msg = `Se ejecuta la línea ${st.line}.`;
+    }
+
+    if (prefix) { lines = [...prefix.lines, ...lines]; msg = `${prefix.msg} ${msg}`; prefix = null; }
+    steps.push({ lines, type, msg, st });
+  });
+
+  const last = R.raw[R.raw.length - 1];
+  const final = last.mem;
+  const first = R.raw.find((r) => r.mem).mem;
+  const sameNumbers = [...first].sort((a, b) => a - b).join() === [...final].sort((a, b) => a - b).join();
+  const sorted = sameNumbers && final.every((v, k) => k === 0 || final[k - 1] <= v);
+  const doneMsg = sorted
+    ? `¡El programa terminó! Los números quedaron ordenados de menor a mayor. Hubo ${last.comps} comparaciones y ${last.moves} movimientos en el arreglo.`
+    : !sameNumbers
+      ? `El programa terminó, pero <b>se perdieron números</b>: al principio estaban ${first.join(', ')} y ahora quedan ${final.join(', ')}. Revisa el código o pulsa «Restablecer código».`
+      : `El programa terminó, pero los números <b>no</b> quedaron ordenados. Revisa el código o pulsa «Restablecer código».`;
+  if (steps.length && steps[steps.length - 1].type === 'end') {
+    Object.assign(steps[steps.length - 1], { type: 'done', msg: doneMsg });
+  } else {
+    steps.push({ lines: [], type: 'done', msg: doneMsg, st: { ...last, events: [], reads: [], moved: [], spawn: {}, kind: 'stmt' } });
+  }
+
+  // "ya en su lugar": la casilla no vuelve a cambiar y el resultado final está ordenado
+  const n = final.length;
+  const lastChange = new Array(n).fill(-1);
+  steps.forEach((s, i) => {
+    const prev = i ? steps[i - 1].st : null;
+    if (!s.st.mem) return;
+    for (let k = 0; k < n; k++) {
+      if (!prev || !prev.mem || prev.mem[k] !== s.st.mem[k] || prev.cell[k] !== s.st.cell[k]) lastChange[k] = i;
+    }
+  });
+  steps.forEach((s, i) => {
+    s.settled = Array.from({ length: n }, (_, k) => sorted && !!s.st.mem && i >= lastChange[k] && s.st.cell[k] != null);
+  });
+
+  let maxV = 1;
+  for (const s of steps) {
+    for (const v of s.st.mem || []) maxV = Math.max(maxV, v);
+    for (const v of s.st.val) if (v !== undefined) maxV = Math.max(maxV, v);
+  }
+  const idxVars = [...new Set([...T.clean.join('\n').matchAll(new RegExp(String.raw`\b${arr}\s*\[\s*([A-Za-z_]\w*)\s*\]`, 'g'))]
+    .map((m) => m[1]).filter((v) => T.scalars.includes(v)))].sort().slice(0, 3);
+
+  return { steps, n, arr, pads: R.padOrder, meshCount: R.val.length, maxV, idxVars, scalars: T.scalars, sorted, initial: steps[0]?.st.mem || final };
+}
+
+// ===========================================================================
+// Editor de código (textarea transparente sobre una capa con colores)
+// ===========================================================================
+const srcEl = $('src');
+const hlInner = $('hlInner');
+const numsInner = $('numsInner');
+const TOKEN = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|(#\w+\s*<[^>]+>|#\w+)|\b(for|if|else|while|return|using|namespace|break|continue|true|false|const)\b|\b(int|bool|long|short|char|float|double|void|auto|unsigned)\b|\b(\d+)\b|\b(main|cout|endl)\b/g;
 const CLS = ['cm', 'str', 'pp', 'kw', 'ty', 'num', 'fn'];
 function highlight(line) {
   let out = '', last = 0;
   line.replace(TOKEN, (m, ...g) => {
     const off = g[g.length - 2];
     const idx = g.slice(0, 7).findIndex((x) => x !== undefined);
-    out += esc(line.slice(last, off)) + `<span class="${CLS[idx]}">${esc(m)}</span>`;
+    out += escHTML(line.slice(last, off)) + `<span class="${CLS[idx]}">${escHTML(m)}</span>`;
     last = off + m.length;
   });
-  return out + esc(line.slice(last));
+  return out + escHTML(line.slice(last));
 }
 
-function renderCode(vals) {
-  $('code').innerHTML = cppSource(vals)
-    .map((l, k) => `<div class="ln" data-l="${k + 1}"><span class="no">${k + 1}</span><span>${highlight(l) || ' '}</span></div>`)
-    .join('');
+let activeLines = [], activeType = '', errLine = null;
+function renderEditor() {
+  const lines = srcEl.value.split('\n');
+  hlInner.innerHTML = lines.map((l, k) => `<div class="ln" data-l="${k + 1}">${highlight(l) || ' '}</div>`).join('');
+  numsInner.innerHTML = lines.map((_, k) => `<div>${k + 1}</div>`).join('');
+  applyLineMarks();
 }
-
-// ---------------------------------------------------------------------------
-// Traza del algoritmo: cada paso guarda una "foto" del estado.
-// layout[id] = casilla donde se dibuja la barra (-1 = caja "temporal").
-// ---------------------------------------------------------------------------
-function buildSteps(input) {
-  const n = input.length;
-  const ids = input.map((_, k) => k);    // qué barra está en cada casilla
-  const nums = input.slice();            // valores reales del arreglo en C++
-  const out = [];
-  let comps = 0, swaps = 0, i = null, j = null, temporal = null, sortedUpTo = 0;
-  const N = (v) => `<span class="n">${v}</span>`;
-
-  const snap = (lines, type, msg, extra = {}) => {
-    const layout = new Array(n);
-    ids.forEach((id, k) => (layout[id] = k));
-    Object.assign(layout, extra.move || {});
-    out.push({ lines, type, msg, i, j, temporal, comps, swaps, sortedUpTo, n, layout,
-               vals: nums.slice(), focus: extra.focus || [], output: !!extra.output });
-  };
-
-  snap([5, 6], 'start', `Tenemos ${n} números guardados en un <b>arreglo</b>: una fila de casillas numeradas desde el 0. Vamos a ordenarlos de menor a mayor.`);
-
-  for (i = 0; i < n - 1; i++) {
-    j = null;
-    snap([8], 'pass', `<b>Vuelta ${i + 1}</b>: nos paramos en la casilla ${i} (el número ${N(nums[i])}). Lo compararemos con todos los que están a su derecha para dejar aquí el más pequeño.`, { focus: [ids[i]] });
-
-    for (j = i + 1; j < n; j++) {
-      comps++;
-      const a = nums[i], b = nums[j];
-      const idI = ids[i], idJ = ids[j];
-      if (b < a) {
-        snap([9, 10], 'compare', `¿El ${N(b)} (casilla ${j}) es menor que el ${N(a)} (casilla ${i})? <b class="yes">Sí</b> → hay que cambiarlos de lugar.`, { focus: [idI, idJ] });
-        temporal = b;
-        snap([11], 'temp', `Primero guardamos el ${N(b)} en la caja <b>temporal</b>, para no perderlo.`, { focus: [idI, idJ], move: { [idJ]: -1 } });
-        nums[j] = a;
-        snap([12], 'copy', `Ahora el ${N(a)} se mueve a la casilla ${j}, que quedó libre.`, { focus: [idI, idJ], move: { [idJ]: -1, [idI]: j } });
-        nums[i] = b;
-        [ids[i], ids[j]] = [ids[j], ids[i]];
-        swaps++;
-        snap([13], 'swap', `Por último, el ${N(b)} sale de la caja temporal y entra en la casilla ${i}. ¡Cambio hecho!`, { focus: [idI, idJ] });
-        temporal = null;
-      } else {
-        snap([9, 10], 'compare', `¿El ${N(b)} (casilla ${j}) es menor que el ${N(a)} (casilla ${i})? <b class="no">No</b> → se quedan como están.`, { focus: [idI, idJ] });
-      }
-    }
-
-    j = null;
-    sortedUpTo = i + 1;
-    let extra = '';
-    if (i === n - 2) { sortedUpTo = n; extra = ` Y como solo queda el ${N(nums[n - 1])}, también está en su lugar.`; }
-    snap([15], 'passEnd', `Fin de la vuelta ${i + 1}: el ${N(nums[i])} es el más pequeño de los que quedaban, así que ya está en su lugar definitivo.${extra}`);
+function applyLineMarks() {
+  $('hl').dataset.type = activeType;
+  hlInner.querySelectorAll('.ln.on, .ln.err').forEach((l) => l.classList.remove('on', 'err'));
+  activeLines.forEach((n) => hlInner.querySelector(`.ln[data-l="${n}"]`)?.classList.add('on'));
+  if (errLine) hlInner.querySelector(`.ln[data-l="${errLine}"]`)?.classList.add('err');
+}
+function syncScroll() {
+  hlInner.style.transform = `translate(${-srcEl.scrollLeft}px, ${-srcEl.scrollTop}px)`;
+  numsInner.style.transform = `translateY(${-srcEl.scrollTop}px)`;
+}
+function scrollToLines(lines) {
+  if (!lines.length || document.activeElement === srcEl || !srcEl.offsetParent) return;
+  const lh = parseFloat(getComputedStyle(srcEl).lineHeight) || 24;
+  const top = (Math.min(...lines) - 1) * lh, bottom = Math.max(...lines) * lh + 20;
+  if (top < srcEl.scrollTop || bottom > srcEl.scrollTop + srcEl.clientHeight) {
+    srcEl.scrollTop = Math.max(0, top - srcEl.clientHeight / 2 + lh);
+    syncScroll();
   }
+}
+srcEl.addEventListener('scroll', syncScroll);
 
-  i = null; j = null; sortedUpTo = n;
-  snap([18, 19, 20], 'done', `¡Listo! Los números quedaron ordenados de menor a mayor. Hicimos ${comps} comparaciones y ${swaps} cambios de lugar. Al final, el programa los muestra en pantalla.`, { output: true });
-  return out;
+function insertText(text) {
+  if (!document.execCommand('insertText', false, text)) {
+    srcEl.setRangeText(text, srcEl.selectionStart, srcEl.selectionEnd, 'end');
+    srcEl.dispatchEvent(new Event('input'));
+  }
+}
+srcEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') { e.preventDefault(); insertText('    '); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    const before = srcEl.value.slice(0, srcEl.selectionStart);
+    const line = before.slice(before.lastIndexOf('\n') + 1);
+    let indent = line.match(/^\s*/)[0];
+    if (/\{\s*$/.test(line)) indent += '    ';
+    insertText('\n' + indent);
+  }
+});
+
+let runTimer = null;
+srcEl.addEventListener('input', () => {
+  activeLines = [];
+  errLine = null;
+  renderEditor();
+  syncScroll();
+  setStatus('busy', 'Revisando el código…');
+  clearTimeout(runTimer);
+  runTimer = setTimeout(() => applyCode(), 700);
+});
+
+function setStatus(kind, text) {
+  $('status').className = `status ${kind}`;
+  $('statusText').textContent = text;
 }
 
-const TAGS = {
-  start: 'inicio', pass: 'nueva vuelta', compare: 'comparar', temp: 'guardar',
-  copy: 'mover', swap: 'cambio', passEnd: 'en su lugar', done: '¡listo!',
-};
-
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // Escena Three.js
-// ---------------------------------------------------------------------------
+// ===========================================================================
 await document.fonts.ready;
+
+const SP = 1.15;
+const BAR_W = 0.8;
+const MAX_H = 5.2;
+const ANIM = 750;
+const AUTO_DELAY = 1500;
+const COLORS = {
+  base: new THREE.Color('#6f98ff'),
+  compare: new THREE.Color('#ffd54a'),
+  move: new THREE.Color('#ff6f8a'),
+  sorted: new THREE.Color('#4adb95'),
+};
+const PTR_COLORS = ['#d9b0ff', '#ffd54a', '#86ecec'];
 
 const stage = $('stage');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
 stage.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#0b1020');
-scene.fog = new THREE.Fog('#0b1020', 30, 70);
+scene.background = new THREE.Color('#2c3658');
 
-const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 300);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.enablePan = false;
-controls.maxPolarAngle = Math.PI * 0.48;
-controls.minDistance = 5;
-controls.maxDistance = 40;
+controls.enablePan = true;            // clic derecho / dos dedos para moverse
+controls.screenSpacePanning = true;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 4;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+let userMoved = false;
+controls.addEventListener('start', () => { userMoved = true; });
 
-scene.add(new THREE.HemisphereLight('#b8c8ff', '#0b1020', 0.9));
-const sun = new THREE.DirectionalLight('#ffffff', 2.2);
-sun.position.set(6, 14, 10);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16 });
-sun.shadow.bias = -0.0005;
+scene.add(new THREE.AmbientLight('#ffffff', 1.5));
+const sun = new THREE.DirectionalLight('#ffffff', 1.25);
+sun.position.set(4, 10, 8);
 scene.add(sun);
-const rim = new THREE.DirectionalLight('#7aa2ff', 0.8);
-rim.position.set(-8, 6, -10);
-scene.add(rim);
 
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ color: '#0e1428', roughness: 0.95 })
-);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshLambertMaterial({ color: '#34406a' }));
 floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
 scene.add(floor);
-const grid = new THREE.GridHelper(80, 80, '#26314f', '#161f38');
-grid.position.y = 0.002;
+const grid = new THREE.GridHelper(120, 120, '#4f5c8a', '#3e4a76');
+grid.position.y = 0.003;
 scene.add(grid);
 
-function regionPlane(color, opacity, y) {
-  const m = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false })
-  );
-  m.rotation.x = -Math.PI / 2;
-  m.position.y = y;
-  m.scale.set(0.001, 2.2, 1);
-  m.userData = { cx: 0, w: 0.001 };
-  scene.add(m);
-  return m;
-}
-const workRegion = regionPlane('#4f7cff', 0.14, 0.01);
-const sortedRegion = regionPlane('#2ed47a', 0.18, 0.012);
+const boxGeo = new THREE.BoxGeometry(BAR_W, 1, BAR_W);
+boxGeo.translate(0, 0.5, 0);
+const edgeGeo = new THREE.EdgesGeometry(boxGeo);
+const edgeMat = new THREE.LineBasicMaterial({ color: '#1d2442', transparent: true, opacity: 0.35 });
 
-function textSprite(text, { fg = '#e6ebf5', bg = null, h = 0.5, weight = 700, size = 72, font = 'JetBrains Mono' } = {}) {
+function textTexture(text, { fg = '#ffffff', bg = null, weight = 700, size = 72 } = {}) {
   const c = document.createElement('canvas');
   const ctx = c.getContext('2d');
-  const f = `${weight} ${size}px "${font}", sans-serif`;
+  const f = `${weight} ${size}px "JetBrains Mono", monospace`;
   ctx.font = f;
   const H = Math.round(size * 1.55);
   const W = Math.max(H, Math.ceil(ctx.measureText(text).width) + size * 0.7);
   c.width = W; c.height = H;
-  if (bg) {
-    ctx.fillStyle = bg;
-    ctx.beginPath(); ctx.roundRect(0, 0, W, H, H * 0.28); ctx.fill();
-  }
+  if (bg) { ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(0, 0, W, H, H * 0.28); ctx.fill(); }
   ctx.font = f; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (!bg) { ctx.lineWidth = size * 0.16; ctx.strokeStyle = 'rgba(28,34,60,.85)'; ctx.lineJoin = 'round'; ctx.strokeText(text, W / 2, H / 2 + size * 0.05); }
   ctx.fillStyle = fg;
   ctx.fillText(text, W / 2, H / 2 + size * 0.05);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
+  return { tex, aspect: W / H };
+}
+let labelScale = 1;
+function textSprite(text, opts = {}) {
+  const { tex, aspect } = textTexture(text, opts);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  sp.scale.set((h * W) / H, h, 1);
+  sp.userData = { h: opts.h ?? 0.5, aspect, opts, text };
+  sp.scale.set(sp.userData.h * aspect, sp.userData.h, 1);
   return sp;
 }
-
-function pointer(text, color) {
-  const g = new THREE.Group();
-  const label = textSprite(text, { fg: '#0b1020', bg: color, h: 0.5 });
-  label.position.y = 0.55;
-  const cone = new THREE.Mesh(
-    new THREE.ConeGeometry(0.16, 0.32, 20),
-    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5 })
-  );
-  cone.rotation.x = Math.PI;
-  g.add(label, cone);
-  g.visible = false;
-  g.userData.target = new THREE.Vector3();
-  scene.add(g);
-  return g;
+function scaleSprite(sp) { const h = sp.userData.h * labelScale; sp.scale.set(h * sp.userData.aspect, h, 1); }
+function setSpriteText(sp, text) {
+  if (sp.userData.text === text) return;
+  sp.material.map.dispose();
+  const { tex, aspect } = textTexture(text, sp.userData.opts);
+  sp.material.map = tex;
+  sp.userData.aspect = aspect;
+  sp.userData.text = text;
+  scaleSprite(sp);
 }
-const ptrI = pointer('i', '#c792ea');
-const ptrJ = pointer('j', '#ffc53d');
+function disposeSprite(sp) { sp.material.map.dispose(); sp.material.dispose(); sp.parent?.remove(sp); }
 
-// Caja "temporal": una base en el suelo a la derecha del arreglo
-const tempGroup = new THREE.Group();
-const tempPad = new THREE.Mesh(
-  new RoundedBoxGeometry(1.3, 0.08, 1.3, 2, 0.04),
-  new THREE.MeshStandardMaterial({ color: '#2a2440', emissive: new THREE.Color('#ff5470'), emissiveIntensity: 0, roughness: 0.6 })
-);
-tempPad.position.y = 0.04;
-tempPad.receiveShadow = true;
-const tempLabel = textSprite('temporal', { fg: '#ffcb6b', weight: 600, h: 0.36 });
-tempLabel.position.set(0, 0.25, 1.05);
-tempGroup.add(tempPad, tempLabel);
-scene.add(tempGroup);
-
-// ---------------------------------------------------------------------------
-// Estado
-// ---------------------------------------------------------------------------
-let values = [];
+// --- objetos de la escena por ejecución ---
+let run = null;
 let steps = [];
 let cur = 0;
-let playing = false;
-let lastAdvance = 0;
-let elements = [];      // una barra por valor (identidad estable → animación de los cambios)
-let indexLabels = [];
+let bars = [], ghosts = [], idxLabels = [], pads = [], pointers = [];
 let prevVars = {};
+let playing = false, lastAdvance = 0;
 
-const xOf = (k) => (k - (values.length - 1) / 2) * SP;
-const xTemp = () => xOf(values.length - 1) + SP * 2;
-const slotX = (slot) => (slot === -1 ? xTemp() : xOf(slot));
+const xOf = (k) => (k - ((run?.n ?? 1) - 1) / 2) * SP;
+const padX = (i) => xOf(run.n - 1) + SP * 2 + i * SP * 1.7;
+const heightOf = (v) => (v <= 0 ? 0.3 : 0.45 + (Math.min(v, run.maxV) / run.maxV) * MAX_H);
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function disposeObj(o) {
-  o.traverse((c) => {
-    c.geometry?.dispose();
-    if (c.material) { c.material.map?.dispose(); c.material.dispose(); }
-  });
-  scene.remove(o);
+function clearScene() {
+  bars.forEach((b) => { scene.remove(b.mesh); b.mat.dispose(); disposeSprite(b.label); });
+  ghosts.forEach((g) => { scene.remove(g.mesh); g.mat.dispose(); g.emat.dispose(); disposeSprite(g.label); });
+  idxLabels.forEach(disposeSprite);
+  pads.forEach((p) => { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); disposeSprite(p.label); });
+  pointers.forEach((p) => { scene.remove(p.group); p.cone.geometry.dispose(); p.cone.material.dispose(); disposeSprite(p.label); });
+  bars = []; ghosts = []; idxLabels = []; pads = []; pointers = [];
 }
 
-function setArray(vals) {
-  stopAuto();
-  elements.forEach((e) => { disposeObj(e.mesh); disposeObj(e.label); });
-  indexLabels.forEach(disposeObj);
-  values = vals.slice();
-  const maxV = Math.max(1, ...values);
-
-  elements = values.map((v, id) => {
-    const h = 0.45 + (v / maxV) * MAX_H;
-    const mesh = new THREE.Mesh(
-      new RoundedBoxGeometry(BAR_W, h, BAR_W, 3, 0.07),
-      new THREE.MeshStandardMaterial({ color: COLORS.base.clone(), roughness: 0.35, metalness: 0.1, emissive: new THREE.Color(0) })
-    );
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.position.set(xOf(id), h / 2, 0);
+function buildScene() {
+  clearScene();
+  const firstVal = (id) => { for (const s of steps) if (s.st.val[id] !== undefined) return s.st.val[id]; return 0; };
+  for (let id = 0; id < run.meshCount; id++) {
+    const mat = new THREE.MeshLambertMaterial({ color: COLORS.base.clone() });
+    const mesh = new THREE.Mesh(boxGeo, mat);
+    mesh.add(new THREE.LineSegments(edgeGeo, edgeMat));
+    mesh.visible = false;
     scene.add(mesh);
+    const v = firstVal(id);
     const label = textSprite(String(v), { h: 0.46 });
+    label.visible = false;
     scene.add(label);
-    return { id, v, h, mesh, label, slot: id, fromX: xOf(id), toX: xOf(id), fromZ: 0, t0: 0, dur: 0,
-             color: COLORS.base.clone(), glow: 0 };
+    bars.push({ id, mesh, mat, label, h: heightOf(v), hT: heightOf(v), vis: 0, visT: 0, x: 0, fromX: 0, toX: 0, t0: 0, dur: 0, key: null, color: COLORS.base.clone() });
+  }
+  for (let k = 0; k < run.n; k++) {
+    const mat = new THREE.MeshBasicMaterial({ color: '#dfe7ff', transparent: true, opacity: 0, depthWrite: false });
+    const emat = new THREE.LineBasicMaterial({ color: '#dfe7ff', transparent: true, opacity: 0 });
+    const mesh = new THREE.Mesh(boxGeo, mat);
+    mesh.add(new THREE.LineSegments(edgeGeo, emat));
+    mesh.position.x = xOf(k);
+    mesh.visible = false;
+    scene.add(mesh);
+    const label = textSprite('0', { h: 0.42, fg: '#dfe7ff' });
+    label.visible = false;
+    scene.add(label);
+    ghosts.push({ mesh, mat, emat, label, h: 0.5, hT: 0.5, vis: 0, visT: 0 });
+    const il = textSprite(`[${k}]`, { fg: '#c3cbe4', weight: 600, h: 0.34 });
+    il.position.set(xOf(k), 0.25, 1.05);
+    scene.add(il);
+    idxLabels.push(il);
+  }
+  run.pads.forEach((name, i) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 1.3), new THREE.MeshLambertMaterial({ color: '#46527e', emissive: new THREE.Color('#ff6f8a'), emissiveIntensity: 0 }));
+    mesh.position.set(padX(i), 0.04, 0);
+    scene.add(mesh);
+    const label = textSprite(name, { fg: '#ffd27a', weight: 600, h: 0.36 });
+    label.position.set(padX(i), 0.25, 1.05);
+    scene.add(label);
+    pads.push({ name, mesh, label });
   });
-
-  indexLabels = values.map((_, k) => {
-    const s = textSprite(`[${k}]`, { fg: '#8b97b5', weight: 600, h: 0.34 });
-    s.position.set(xOf(k), 0.25, 1.05);
-    scene.add(s);
-    return s;
+  run.idxVars.forEach((name, i) => {
+    const color = PTR_COLORS[i % PTR_COLORS.length];
+    const group = new THREE.Group();
+    const label = textSprite(name, { fg: '#1d2442', bg: color, h: 0.5 });
+    label.position.y = 0.55;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 20), new THREE.MeshLambertMaterial({ color }));
+    cone.rotation.x = Math.PI;
+    group.add(label, cone);
+    group.visible = false;
+    scene.add(group);
+    pointers.push({ name, group, label, cone, target: new THREE.Vector3() });
   });
-  tempGroup.position.x = xTemp();
-
-  steps = buildSteps(values);
-  renderCode(values);
-  frameCamera();
-  prevVars = {};
-  goTo(0, false);
+  frameCamera(true);
 }
 
-function frameCamera() {
-  const w = (values.length + 2) * SP;
-  const d = Math.max(w * 0.95, 9) + 3;
-  const cx = (xOf(0) + xTemp()) / 2;
-  camera.position.set(cx, 5.6 + w * 0.12, d + 1);
-  controls.target.set(cx, 2.9, 0);
+function frameCamera(force = false) {
+  if (!run || (userMoved && !force)) return;
+  userMoved = false;
+  const x0 = xOf(0) - SP * 0.6;
+  const x1 = (run.pads.length ? padX(run.pads.length - 1) : xOf(run.n - 1)) + SP * 0.8;
+  const cx = (x0 + x1) / 2, halfW = (x1 - x0) / 2;
+  const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const hf = Math.atan(Math.tan(vf) * camera.aspect);
+  const narrow = camera.aspect < 1.2;
+  const d = Math.max(halfW / Math.tan(hf), 4.6 / Math.tan(vf)) + (narrow ? 0.5 : 2);
+  camera.position.set(cx, 2.9 + d * (narrow ? 0.22 : 0.35), d);
+  controls.target.set(cx, narrow ? 3.3 : 2.9, 0);
+  controls.maxDistance = Math.max(40, d * 2);
   controls.update();
+  // en pantallas pequeñas la cámara queda lejos: agrandamos los textos para que se lean
+  labelScale = Math.min(1.9, Math.max(1, 38 / (stage.clientHeight / d)));
+  [...bars.map((b) => b.label), ...ghosts.map((g) => g.label), ...idxLabels, ...pads.map((p) => p.label)].forEach(scaleSprite);
+  pointers.forEach((p) => p.group.scale.setScalar(labelScale));
 }
 
-// ---------------------------------------------------------------------------
-// Aplicar un paso
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Mostrar un paso
+// ===========================================================================
 function goTo(idx, animate = true) {
+  if (!run) return;
   cur = Math.max(0, Math.min(steps.length - 1, idx));
-  const s = steps[cur];
+  const s = steps[cur], st = s.st;
   const now = performance.now();
-  const swapping = s.type === 'temp' || s.type === 'copy' || s.type === 'swap';
 
-  elements.forEach((el) => {
-    const slot = s.layout[el.id];
-    if (el.slot !== slot) {
-      el.fromX = el.mesh.position.x;
-      el.fromZ = el.mesh.position.z;
-      el.toX = slotX(slot);
-      el.t0 = now;
-      el.dur = animate ? ANIM : 0;
-      el.slot = slot;
+  const loc = {};
+  st.cell.forEach((id, k) => { if (id != null) loc[id] = { x: xOf(k), key: 'c' + k, k }; });
+  run.pads.forEach((nm, i) => { const id = st.pad[nm]; if (id != null) loc[id] = { x: padX(i), key: 'p' + nm, pad: true }; });
+  const readCells = new Set(s.type === 'compare' ? st.reads.map((r) => r.k) : []);
+  const moved = new Set(st.moved);
+
+  bars.forEach((b) => {
+    const L = loc[b.id];
+    if (!L) { b.visT = 0; b.key = null; return; }
+    const v = st.val[b.id];
+    b.hT = heightOf(v);
+    setSpriteText(b.label, String(v));
+    if (b.key === null) {
+      const sp = st.spawn[b.id];
+      b.x = b.fromX = animate && sp ? xOf(sp.cell) : L.x;
+      if (!animate || b.vis < 0.05) b.h = b.hT;
     }
-    let c = COLORS.base, glow = 0;
-    if (slot >= 0 && slot < s.sortedUpTo) { c = COLORS.sorted; glow = 0.12; }
-    if (s.focus.includes(el.id)) {
-      if (swapping) { c = COLORS.swap; glow = 0.45; }
-      else if (s.type === 'compare') { c = COLORS.compare; glow = 0.4; }
-      else { glow = 0.35; }
-    }
-    el.color.copy(c);
-    el.glow = glow;
+    if (b.key !== L.key) { b.fromX = b.x; b.toX = L.x; b.t0 = now; b.dur = animate ? ANIM : 0; }
+    b.key = L.key;
+    b.visT = 1;
+    if (!animate) { b.vis = 1; b.h = b.hT; b.x = b.toX = L.x; b.dur = 0; }
+
+    let c = COLORS.base;
+    if (L.k !== undefined && s.settled[L.k]) c = COLORS.sorted;
+    if (L.k !== undefined && readCells.has(L.k)) c = COLORS.compare;
+    if (moved.has(b.id) || L.pad) c = COLORS.move;
+    if (s.type === 'done' && run.sorted) c = COLORS.sorted;
+    b.color.copy(c);
   });
 
-  // flechas i / j
-  [[ptrI, s.i], [ptrJ, s.j]].forEach(([p, k]) => {
-    const show = k !== null;
+  ghosts.forEach((g, k) => {
+    g.visT = st.mem && st.cell[k] == null ? 1 : 0;
+    if (st.mem) { g.hT = heightOf(st.mem[k]); setSpriteText(g.label, String(st.mem[k])); }
+    if (!animate) { g.vis = g.visT; g.h = g.hT; }
+  });
+
+  pads.forEach((p) => { p.mesh.material.emissiveIntensity = st.pad[p.name] != null ? 0.35 : 0; });
+
+  const used = {};
+  pointers.forEach((p) => {
+    const v = st.vars[p.name];
+    const show = !!st.mem && Number.isInteger(v) && v >= 0 && v < run.n;
     if (show) {
-      const id = s.layout.indexOf(k);
-      const h = id >= 0 ? elements[id].h : 0.6;
-      p.userData.target.set(xOf(k), h + 1.25, 0);
-      if (!p.visible || !animate) p.position.copy(p.userData.target);
+      const id = st.cell[v];
+      const h = id != null ? heightOf(st.val[id]) : heightOf(st.mem[v]);
+      const stack = used[v] = (used[v] ?? -1) + 1;
+      p.target.set(xOf(v), h + (1.25 + stack * 1.05) * labelScale, 0);
+      if (!p.group.visible || !animate) p.group.position.copy(p.target);
     }
-    p.visible = show;
+    p.group.visible = show;
   });
-
-  tempPad.material.emissiveIntensity = s.temporal !== null ? 0.35 : 0;
-
-  // zonas del suelo: azul = lo que falta ordenar, verde = ya ordenado
-  const n = values.length;
-  if (s.i !== null) setRegion(workRegion, xOf(s.i) - SP / 2, xOf(n - 1) + SP / 2);
-  else setRegion(workRegion, xOf(0) - SP / 2, xOf(0) - SP / 2);
-  if (s.sortedUpTo > 0) setRegion(sortedRegion, xOf(0) - SP / 2, xOf(s.sortedUpTo - 1) + SP / 2);
-  else setRegion(sortedRegion, xOf(0) - SP / 2, xOf(0) - SP / 2);
-  if (!animate) [workRegion, sortedRegion].forEach(snapRegion);
 
   updatePanel(s);
 }
 
-function setRegion(m, x0, x1) { m.userData.cx = (x0 + x1) / 2; m.userData.w = Math.max(0.001, x1 - x0); }
-function snapRegion(m) { m.position.x = m.userData.cx; m.scale.x = m.userData.w; }
+const TAGS = {
+  decl: 'crear', loop: 'nueva vuelta', loopEnd: 'fin del ciclo', compare: 'comparar', cond: 'condición', save: 'guardar',
+  move: 'mover', set: 'cambiar', lost: '¡cuidado!', assign: 'guardar dato', print: 'pantalla', end: 'fin', done: '¡listo!',
+};
 
-// ---------------------------------------------------------------------------
-// Panel HTML
-// ---------------------------------------------------------------------------
 function updatePanel(s) {
+  const st = s.st;
   $('msg').innerHTML = s.msg;
-  $('tag').textContent = TAGS[s.type];
+  $('tag').textContent = TAGS[s.type] || 'paso';
   $('tag').dataset.type = s.type;
 
-  const pct = (cur / (steps.length - 1)) * 100;
+  const pct = steps.length > 1 ? (cur / (steps.length - 1)) * 100 : 100;
   $('progFill').style.width = `${pct}%`;
   $('progText').textContent = s.type === 'done' ? 'completado' : `${Math.round(pct)}% avanzado`;
-  $('passBadge').textContent = s.i !== null ? `Vuelta ${s.i + 1} de ${s.n - 1}`
-    : s.type === 'done' ? 'Ordenado ✓' : 'Listo para empezar';
+  $('badge').textContent = `Paso ${cur + 1} de ${steps.length}`;
 
-  // líneas de código
-  const code = $('code');
-  code.dataset.type = s.type;
-  code.querySelectorAll('.ln.on').forEach((l) => l.classList.remove('on'));
-  let first = null;
-  s.lines.forEach((n) => {
-    const l = code.querySelector(`.ln[data-l="${n}"]`);
-    l.classList.add('on');
-    first ??= l;
-  });
-  if (first && code.offsetParent) {
-    const top = first.offsetTop, bottom = top + first.offsetHeight * s.lines.length;
-    if (top < code.scrollTop + 20 || bottom > code.scrollTop + code.clientHeight - 20) {
-      code.scrollTop = top - code.clientHeight / 2 + 20;
-    }
-  }
+  activeLines = s.lines;
+  activeType = s.type;
+  applyLineMarks();
+  scrollToLines(s.lines);
 
-  // variables
-  const show = (v) => (v === null || v === undefined ? '—' : String(v));
-  const vars = {
-    numeroDeDatos: s.n,
-    i: s.i,
-    j: s.j,
-    temporal: s.temporal,
-    'arreglo[i]': s.i !== null ? s.vals[s.i] : null,
-    'arreglo[j]': s.j !== null ? s.vals[s.j] : null,
-    comparaciones: s.comps,
-    cambios: s.swaps,
-  };
+  const vars = {};
+  run.scalars.forEach((n) => { vars[n] = st.vars[n]; });
+  vars.comparaciones = st.comps;
+  vars.movimientos = st.moves;
   $('vgrid').innerHTML = Object.entries(vars).map(([k, v]) => {
-    const changed = k in prevVars && prevVars[k] !== v && v !== null;
-    return `<div class="v${changed ? ' changed' : ''}"><div class="k" title="${k}">${k}</div><div class="val">${show(v)}</div></div>`;
+    const changed = k in prevVars && prevVars[k] !== v && v !== undefined;
+    return `<div class="v${changed ? ' changed' : ''}"><div class="k" title="${k}">${k}</div><div class="val">${fmt(v)}</div></div>`;
   }).join('');
   prevVars = vars;
-
-  // tira del arreglo (valores reales en memoria)
-  const swapping = s.type === 'temp' || s.type === 'copy' || s.type === 'swap';
-  const cells = s.vals.map((v, k) => {
-    let cls = k < s.sortedUpTo ? 'sorted' : '';
-    if (s.j !== null && (k === s.i || k === s.j)) cls = swapping ? 'swap' : s.type === 'compare' ? 'compare' : cls;
-    return `<div class="cell ${cls}"><b>${v}</b><small>${k}</small></div>`;
-  }).join('');
-  $('strip').innerHTML = `<span class="brace">arreglo = {</span>${cells}<span class="brace">}</span>`;
-
-  $('outText').textContent = s.output ? s.vals.join(' ') + ' ' : '';
+  $('outText').textContent = st.out;
 
   $('bPrev').disabled = $('bReset').disabled = cur === 0;
   $('bNext').disabled = cur === steps.length - 1;
   $('bNext').textContent = cur === steps.length - 1 ? '¡Terminado!' : 'Siguiente paso ▶';
 }
 
-// ---------------------------------------------------------------------------
+function setRun(r) {
+  stopAuto();
+  run = r;
+  steps = r.steps;
+  prevVars = {};
+  $('empty').style.display = 'none';
+  $('bAuto').disabled = false;
+  buildScene();
+  goTo(0, false);
+}
+
+function showNoRun() {
+  stopAuto();
+  clearScene();
+  run = null;
+  steps = [];
+  $('empty').style.display = 'flex';
+  $('msg').innerHTML = 'El código tiene un error. Mira el mensaje en rojo sobre el código, o pulsa <b>«Restablecer código»</b>.';
+  $('tag').textContent = 'error';
+  $('tag').dataset.type = 'lost';
+  $('badge').textContent = '—';
+  $('vgrid').innerHTML = '';
+  $('outText').textContent = '';
+  ['bPrev', 'bReset', 'bNext', 'bAuto'].forEach((b) => ($(b).disabled = true));
+}
+
+function applyCode() {
+  clearTimeout(runTimer);
+  const text = srcEl.value;
+  store.set('burbuja.code', text);
+  try {
+    const r = execute(text);
+    errLine = null;
+    setStatus('ok', r.sorted ? `✓ El código funciona · ${r.steps.length} pasos` : `✓ El código se ejecuta · ${r.steps.length} pasos (pero no ordena)`);
+    setRun(r);
+  } catch (e) {
+    const ce = e instanceof CodeError ? e : new CodeError(null, 'Ocurrió un error inesperado.');
+    errLine = ce.line;
+    activeLines = [];
+    setStatus('err', `⚠ ${ce.line ? `Línea ${ce.line}: ` : ''}${ce.message}`);
+    applyLineMarks();
+    showNoRun();
+  }
+}
+
+// ===========================================================================
 // Botones
-// ---------------------------------------------------------------------------
+// ===========================================================================
 function startAuto() {
+  if (!run) return;
   if (cur >= steps.length - 1) goTo(0, false);
   playing = true;
   lastAdvance = performance.now() - AUTO_DELAY * 0.6;
-  $('bAuto').textContent = '⏸ Detener';
+  $('bAuto').innerHTML = '⏸<span class="txt"> Detener</span>';
   $('bAuto').classList.add('on');
 }
 function stopAuto() {
   playing = false;
-  $('bAuto').textContent = '▶ Ver automático';
+  $('bAuto').innerHTML = '▶<span class="txt"> Ver automático</span>';
   $('bAuto').classList.remove('on');
 }
-
 $('bAuto').onclick = () => (playing ? stopAuto() : startAuto());
 $('bNext').onclick = () => { stopAuto(); goTo(cur + 1); };
 $('bPrev').onclick = () => { stopAuto(); goTo(cur - 1); };
 $('bReset').onclick = () => { stopAuto(); goTo(0, false); };
+$('bCenter').onclick = () => frameCamera(true);
 
-function randomNumbers() {
-  return Array.from({ length: 8 }, () => 3 + Math.floor(Math.random() * 97));
+function randomNumbers() { return Array.from({ length: 8 }, () => 3 + Math.floor(Math.random() * 97)); }
+function currentNumbers() {
+  const m = srcEl.value.match(/\bint\s+\w+\s*\[[^\]]*\]\s*=\s*\{([^}]*)\}/);
+  const nums = m ? m[1].split(',').map((x) => parseInt(x, 10)).filter(Number.isInteger) : [];
+  return nums.length >= 2 && nums.length <= 16 ? nums : (run?.initial || randomNumbers());
 }
-$('bRandom').onclick = () => { $('err').textContent = ''; setArray(randomNumbers()); };
+function setNumbersInCode(nums) {
+  let t = srcEl.value;
+  const re = /(\bint\s+\w+\s*\[)\s*[^\]]*(\]\s*=\s*\{)[^}]*(\})/;
+  if (re.test(t)) {
+    t = t.replace(re, (m, a, b, c) => `${a}${nums.length}${b}${nums.join(', ')}${c}`);
+    t = t.replace(/(\bnumeroDeDatos\s*=\s*)\d+/, (m, a) => `${a}${nums.length}`);
+  } else t = ORIGINAL(nums);
+  srcEl.value = t;
+  renderEditor();
+  syncScroll();
+  applyCode();
+}
 
+$('bRestore').onclick = () => {
+  srcEl.value = ORIGINAL(currentNumbers());
+  srcEl.scrollTop = 0;
+  srcEl.scrollLeft = 0;
+  renderEditor();
+  syncScroll();
+  applyCode();
+};
+
+$('bRandom').onclick = () => { $('err').textContent = ''; setNumbersInCode(randomNumbers()); };
 $('bCustom').onclick = () => {
-  const parts = $('custom').value.trim().split(/[\s,;]+/).filter(Boolean);
-  const nums = parts.map(Number);
+  const nums = $('custom').value.trim().split(/[\s,;]+/).filter(Boolean).map(Number);
   if (nums.some((x) => !Number.isInteger(x))) return ($('err').textContent = 'Escribe solo números enteros, separados por comas.');
   if (nums.length < 2 || nums.length > 12) return ($('err').textContent = 'Escribe entre 2 y 12 números.');
   if (nums.some((x) => x < 0 || x > 999)) return ($('err').textContent = 'Usa números entre 0 y 999.');
   $('err').textContent = '';
-  setArray(nums);
+  setNumbersInCode(nums);
 };
 $('custom').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('bCustom').click(); });
 
 document.querySelectorAll('.tabs [data-tab]').forEach((b) => {
   b.onclick = () => {
     document.querySelectorAll('.tabs [data-tab]').forEach((x) => x.classList.toggle('active', x === b));
-    $('code').style.display = b.dataset.tab === 'code' ? '' : 'none';
-    $('theory').style.display = b.dataset.tab === 'theory' ? 'block' : 'none';
+    const code = b.dataset.tab === 'code';
+    $('editor').style.display = code ? '' : 'none';
+    $('status').style.display = code ? '' : 'none';
+    $('theory').style.display = code ? 'none' : 'block';
   };
 });
 
 window.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === 'ArrowRight') { e.preventDefault(); $('bNext').click(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); $('bPrev').click(); }
 });
 
-// ---------------------------------------------------------------------------
-// Bucle de render
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Paneles redimensionables (se recuerdan en este navegador; doble clic restablece)
+// ===========================================================================
+const layout = $('layout');
+const isMobile = () => matchMedia('(max-width: 860px)').matches;
+const sizes = (() => { try { return JSON.parse(store.get('burbuja.layout') || '{}'); } catch { return {}; } })();
+function applySizes() { for (const [k, v] of Object.entries(sizes)) layout.style.setProperty(k, v + 'px'); }
+applySizes();
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function gutter(el, onMove, resetKeys) {
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('drag');
+    const move = (ev) => { onMove(ev); applySizes(); };
+    const up = () => {
+      el.classList.remove('drag');
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+      store.set('burbuja.layout', JSON.stringify(sizes));
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  });
+  el.addEventListener('dblclick', () => {
+    resetKeys.forEach((k) => { delete sizes[k]; layout.style.removeProperty(k); });
+    store.set('burbuja.layout', JSON.stringify(sizes));
+  });
+}
+gutter($('gEditor'), (ev) => {
+  const r = layout.getBoundingClientRect();
+  sizes['--editor-w'] = Math.round(clamp(r.right - 14 - ev.clientX - 7, 300, r.width - 440));
+}, ['--editor-w']);
+gutter($('gStage'), (ev) => {
+  if (isMobile()) {
+    sizes['--m-stage-h'] = Math.round(clamp(ev.clientY - stage.getBoundingClientRect().top - 7, 200, innerHeight * 0.8));
+  } else {
+    const r = $('left').getBoundingClientRect();
+    sizes['--stage-h'] = Math.round(clamp(ev.clientY - r.top - 7, 160, r.height - 120));
+  }
+}, ['--stage-h', '--m-stage-h']);
+gutter($('gEditorM'), (ev) => {
+  sizes['--m-editor-h'] = Math.round(clamp(ev.clientY - $('editorCard').getBoundingClientRect().top - 7, 220, 1400));
+}, ['--m-editor-h']);
+
+// ===========================================================================
+// Bucle de dibujo
+// ===========================================================================
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  frameCamera();
 }
 new ResizeObserver(resize).observe(stage);
 resize();
 
-const tmp = new THREE.Color();
 let prevT = performance.now();
 renderer.setAnimationLoop((now) => {
   const dt = Math.min((now - prevT) / 1000, 0.1);
   prevT = now;
   const k = 1 - Math.exp(-dt * 10);
 
-  if (playing && now - lastAdvance >= AUTO_DELAY) {
+  if (playing && run && now - lastAdvance >= AUTO_DELAY) {
     lastAdvance = now;
     if (cur < steps.length - 1) goTo(cur + 1);
     if (cur >= steps.length - 1) stopAuto();
   }
 
-  for (const el of elements) {
-    const p = el.dur > 0 ? Math.min(1, (now - el.t0) / el.dur) : 1;
+  for (const b of bars) {
+    const p = b.dur > 0 ? Math.min(1, (now - b.t0) / b.dur) : 1;
     const e = ease(p);
     const arc = p < 1 ? Math.sin(Math.PI * e) : 0;
-    const x = el.fromX + (el.toX - el.fromX) * e;
-    const z = el.fromZ * (1 - e) + arc * 1.5;      // rodea por delante a las demás barras
-    const y = el.h / 2 + arc * 0.5;
-    el.mesh.position.set(x, y, z);
-    el.label.position.set(x, y + el.h / 2 + 0.42, z);
-    const m = el.mesh.material;
-    m.color.lerp(el.color, k);
-    m.emissive.lerp(tmp.copy(el.color).multiplyScalar(el.glow), k);
+    b.x = p >= 1 ? b.toX : b.fromX + (b.toX - b.fromX) * e;
+    b.h += (b.hT - b.h) * k;
+    b.vis += (b.visT - b.vis) * Math.min(1, k * 1.4);
+    const vis = Math.min(1, Math.max(0, b.vis));
+    const show = vis > 0.02;
+    b.mesh.visible = b.label.visible = show;
+    if (!show) continue;
+    const y = arc * 0.5, z = arc * 1.5;   // rodea por delante a las demás barras
+    b.mesh.position.set(b.x, y, z);
+    b.mesh.scale.set(vis, Math.max(0.001, b.h * vis), vis);
+    b.label.position.set(b.x, y + b.h * vis + 0.42 * labelScale, z);
+    b.label.material.opacity = vis;
+    b.mat.color.lerp(b.color, k);
   }
 
-  for (const p of [ptrI, ptrJ]) {
-    if (!p.visible) continue;
-    p.position.lerp(p.userData.target, Math.min(1, k * 1.3));
-    p.children[1].position.y = Math.sin(now / 260) * 0.06;
+  for (const g of ghosts) {
+    g.h += (g.hT - g.h) * k;
+    g.vis += (g.visT - g.vis) * k;
+    const show = g.vis > 0.02;
+    g.mesh.visible = g.label.visible = show;
+    if (!show) continue;
+    g.mesh.scale.set(1, g.h, 1);
+    g.mat.opacity = 0.14 * g.vis;
+    g.emat.opacity = 0.7 * g.vis;
+    g.label.position.set(g.mesh.position.x, g.h + 0.42 * labelScale, 0);
+    g.label.material.opacity = 0.75 * g.vis;
   }
 
-  for (const r of [workRegion, sortedRegion]) {
-    r.position.x += (r.userData.cx - r.position.x) * k;
-    r.scale.x += (r.userData.w - r.scale.x) * k;
+  for (const p of pointers) {
+    if (!p.group.visible) continue;
+    p.group.position.lerp(p.target, Math.min(1, k * 1.3));
+    p.cone.position.y = Math.sin(now / 260) * 0.06;
   }
 
   controls.update();
   renderer.render(scene, camera);
 });
 
-setArray(randomNumbers());
+// ===========================================================================
+// Inicio
+// ===========================================================================
+srcEl.value = store.get('burbuja.code') || ORIGINAL(randomNumbers());
+renderEditor();
+applyCode();
 </script>
 </body>
 </html>
